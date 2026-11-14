@@ -5,12 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#24578A">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Takip Defteri">
+<meta name="apple-mobile-web-app-title" content="Ödev Takip">
 <meta name="robots" content="noindex">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="ikon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>Takip Defteri</title>
+<title>Ödev Takip Defteri</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
@@ -85,6 +85,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .brand small{color:var(--muted);display:block}
 .logo svg{width:34px;height:34px;display:block}
 .top-r{display:flex;align-items:center;gap:10px}
+@media (max-width:600px){.top{padding:10px 12px;gap:8px}.top .brand strong{white-space:nowrap;font-size:1rem}.top .brand small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:38vw}.top .brand>div{min-width:0}.top-r{gap:6px}.top-r .role,.top-r [data-a=refresh]{display:none}}
 .role{font-size:.85rem;color:var(--muted)}
 .proto{background:var(--pencil-soft);font-size:.82rem;padding:6px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
 
@@ -844,7 +845,7 @@ function karneHtml(sid,ws){
    <section><h3>Kitap okuma</h3>${satir('Sayfa',ls.sayfa,+S.settings.okumaHedef||0)}${ls.kitaplar.size?`<p class="small">Okunan: ${[...ls.kitaplar].map(esc).join(', ')}</p>`:''}</section>
    <section><h3>Okul ödevleri</h3>${os.top?`<p class="small">${os.top} ödev bildirildi: <b>${os.tam}</b> tamam, <b>${os.eksik}</b> eksik, <b>${os.yok}</b> yapılmadı · tamamlama ${pct(os.pct)}</p>`:'<p class="small muted">Bu hafta okul ödevi bildirilmedi.</p>'}</section>
    ${ex.length?`<section><h3>Deneme</h3>${ex.map(e=>`<p class="small"><b>${esc(e.name)}</b> (${fmt(e.date)}): ${e.dersler.map(dd=>{const x=(e.results[sid]||{})[dd.ad];return x?`${esc(KISA[dd.ad]||dd.ad)} ${nf(netOf(x.d,x.y))}`:'';}).filter(Boolean).join(' · ')} · <b>toplam net ${nf(examNet(e,sid))}</b></p>`).join('')}</section>`:''}
-   <p class="small muted karne-alt">Soru, okuma ve ödev bilgileri velinin günlük kaydına dayanır; görev durumları öğretmen kontrolünü gösterir. Takip Defteri · ${fmtG(TODAY)}</p>
+   <p class="small muted karne-alt">Soru, okuma ve ödev bilgileri velinin günlük kaydına dayanır; görev durumları öğretmen kontrolünü gösterir. Ödev Takip Defteri · ${fmtG(TODAY)}</p>
   </article>`;
 }
 
@@ -884,7 +885,7 @@ function devSections(sid,teacher){
 /* ---------- giriş ---------- */
 function vLogin(){
   return `<div class="login"><div class="login-box">
-   <div class="brand"><span class="logo">${LOGO}</span><div><strong style="font-size:1.6rem">Takip Defteri</strong><small>Öğretmen–veli takip sistemi</small></div></div>
+   <div class="brand"><span class="logo">${LOGO}</span><div><strong style="font-size:1.6rem">Ödev Takip Defteri</strong><small>Öğretmen–veli takip sistemi</small></div></div>
    ${ui.loginErr?`<p class="err" role="alert">${esc(ui.loginErr)}</p>`:''}
    <div class="login-grid">
     <form class="card" data-form="veli"><h2>Veli girişi</h2><p class="muted small">Öğretmenin verdiği 6 haneli veli kodu ya da kendi belirlediğiniz kullanıcı adıyla girin.</p>
@@ -903,7 +904,7 @@ function vLogin(){
 function tShell(body){
   const pend=pendingList().length,openN=threads().filter(t=>t.open).length;
   const nav=[['pano','Pano'],['gorevler','Görevler'],['kontrol','Kontrol',pend],['notlar','Notlar',openN],['denemeler','Denemeler'],['dosyalar','Dosyalar'],['ogrenciler','Öğrenciler'],['grup','Enler ve akış'],['ayarlar','Ayarlar']];
-  return `<header class="top"><div class="brand"><span class="logo">${LOGO}</span><div><strong>Takip Defteri</strong><small>${esc(S.settings.className)}</small></div></div>
+  return `<header class="top"><div class="brand"><span class="logo">${LOGO}</span><div><strong>Ödev Takip Defteri</strong><small>${esc(S.settings.className)}</small></div></div>
    <div class="top-r"><span class="role">${esc(ME.ad)}</span><button class="btn ghost sm" data-a="refresh" title="Verileri yenile">Yenile</button><button class="iconbtn" data-a="bell" aria-label="Bildirimler">${BELL}${(()=>{const u=S.notifs.filter(n=>!n.read).length;return u?`<span class="badge">${u}</span>`:'';})()}</button><button class="btn ghost sm" data-a="logout">Çıkış</button></div></header>
    <div class="tbody"><nav class="side" aria-label="Öğretmen menüsü">${nav.map(([v,l,b])=>`<button class="nav ${ui.view===v?'on':''}" data-a="go" data-v="${v}">${l}${b?`<span class="badge">${b}</span>`:''}</button>`).join('')}</nav>
    <main class="main">${body}</main></div>`;
@@ -1450,7 +1451,7 @@ function vModal(){
     const st=stu(m.sid)||{name:''},adres=location.origin+location.pathname;
     inner=`<h2>${m.yeni?'Veli hesabı açıldı':'Yeni şifre üretildi'}</h2><p>${esc(st.name)} · veli giriş bilgileri:</p>
     ${m.yeni?'':'<p class="small muted">Veli kendi kullanıcı adını belirlemişse sıfırlandı; yeniden veli koduyla girer ve isterse yeni bir ad seçer.</p>'}<div class="tiles"><div class="tile"><b style="letter-spacing:.12em">${esc(m.kod||'')}</b><span>Veli kodu</span></div><div class="tile pen"><b style="letter-spacing:.12em">${esc(m.pin)}</b><span>Şifre</span></div></div>
-    <pre class="report" id="cred-txt">Takip Defteri giriş bilgileri
+    <pre class="report" id="cred-txt">Ödev Takip Defteri giriş bilgileri
 Öğrenci: ${esc(st.name)}
 Adres: ${esc(adres)}
 Veli kodu: ${esc(m.kod||'')}
@@ -1485,7 +1486,7 @@ Veli kodu: ${esc(m.kod||'')}
 const app=document.getElementById('app');
 function render(){
   const sy=window.scrollY;let html;
-  if(ui.loading) html=`<div class="login"><div class="login-box"><div class="brand"><span class="logo">${LOGO}</span><div><strong style="font-size:1.4rem">Takip Defteri</strong><small>Yükleniyor…</small></div></div></div></div>`;
+  if(ui.loading) html=`<div class="login"><div class="login-box"><div class="brand"><span class="logo">${LOGO}</span><div><strong style="font-size:1.4rem">Ödev Takip Defteri</strong><small>Yükleniyor…</small></div></div></div></div>`;
   else if(!ui.role) html=vLogin();
   else if(ui.role==='t'){const v={pano:vPano,gorevler:vGorevler,kontrol:vKontrol,notlar:vNotlar,denemeler:vDenemeler,dosyalar:vDosyalar,ogrenciler:vOgrenciler,grup:vGrup,ayarlar:vAyarlar}[ui.view]||vPano;html=tShell(v());}
   else if(!ui.sid) html=`<div class="login"><div class="login-box"><section class="card"><h2>Öğrenci bağlantısı bulunamadı</h2><p class="muted">Bu veli hesabı henüz bir öğrenciye bağlı değil. Lütfen öğretmenle iletişime geçin.</p><button class="btn" data-a="logout">Çıkış</button></section></div></div>`;
@@ -1870,7 +1871,7 @@ function pushKarti(yer){
   let ic='';
   if(p==='acik') ic=`<p class="small"><strong>✓ Bu cihazda bildirimler açık.</strong> ${ne[0].toUpperCase()+ne.slice(1)} telefonunuza gelir.</p><div class="row-btns"><button class="btn sm" data-a="pushdeneme">Deneme bildirimi gönder</button><button class="btn sm ghost" data-a="pushkapat">Bu cihazda kapat</button></div>`;
   else if(p==='kapali') ic=`<p class="small">Uygulama kapalıyken de ${ne} telefonunuza gelsin.</p><div class="row-btns"><button class="btn sm pri" data-a="pushac">Bildirimleri aç</button>${yer==='banner'?'<button class="btn sm ghost" data-a="pushsonra">Şimdi değil</button>':''}</div>`;
-  else if(p==='ios') ic=`<p class="small"><strong>iPhone’da bildirim için önce uygulamayı ana ekrana ekleyin:</strong> Safari’de alttaki <b>Paylaş</b> düğmesine (kare ve yukarı ok) dokunun → <b>Ana Ekrana Ekle</b>. Sonra Takip Defteri’ni ana ekrandaki simgeden açıp buradan “Bildirimleri aç”a dokunun. (iOS 16.4 ve üstü gerekir.)</p>`;
+  else if(p==='ios') ic=`<p class="small"><strong>iPhone’da bildirim için önce uygulamayı ana ekrana ekleyin:</strong> Safari’de alttaki <b>Paylaş</b> düğmesine (kare ve yukarı ok) dokunun → <b>Ana Ekrana Ekle</b>. Sonra Ödev Takip Defteri’ni ana ekrandaki simgeden açıp buradan “Bildirimleri aç”a dokunun. (iOS 16.4 ve üstü gerekir.)</p>`;
   else if(p==='engelli') ic=`<p class="small">Bildirimler bu tarayıcıda engellenmiş. Adres çubuğundaki kilit simgesine dokunup <b>Bildirimler → İzin ver</b> seçin, sonra sayfayı yenileyin.</p>`;
   else if(p==='yok') ic=`<p class="small muted">Bu tarayıcı telefona bildirim göndermeyi desteklemiyor. Android’de Chrome, iPhone’da ana ekrana eklenmiş uygulama kullanın.</p>`;
   else return '';

@@ -1,4 +1,4 @@
-/* Takip Defteri · service worker: yalnızca bildirim gösterir; sayfaları önbelleğe almaz
+/* Ödev Takip Defteri · service worker: yalnızca bildirim gösterir; sayfaları önbelleğe almaz
    (her açılışta güncel sürüm gelsin diye). */
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
@@ -6,7 +6,7 @@ self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
 self.addEventListener('push', e => {
   let v = {};
   try { v = e.data ? e.data.json() : {}; } catch (_) { v = { metin: e.data && e.data.text() }; }
-  const baslik = v.baslik || 'Takip Defteri';
+  const baslik = 'Ödev Takip Defteri';
   e.waitUntil(self.registration.showNotification(baslik, {
     body: v.metin || 'Yeni bir bildiriminiz var.',
     icon: 'ikon-192.png',

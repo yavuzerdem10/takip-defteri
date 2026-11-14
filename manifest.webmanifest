@@ -1,6 +1,6 @@
 {
-  "name": "Takip Defteri",
-  "short_name": "Takip Defteri",
+  "name": "Ödev Takip Defteri",
+  "short_name": "Ödev Takip",
   "description": "Öğretmen–veli takip sistemi",
   "lang": "tr",
   "start_url": "./",
