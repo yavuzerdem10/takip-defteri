@@ -193,12 +193,6 @@ textarea{min-height:80px;resize:vertical}
 .err{color:var(--crit);font-size:.9rem}
 
 /* veli */
-.kvkk{max-width:720px;margin:0 auto;padding:20px 16px 40px;display:flex;flex-direction:column;gap:14px}
-.kvkk-metin h3{font-size:1rem;margin:16px 0 4px}.kvkk-metin p,.kvkk-metin li{font-size:.92rem;line-height:1.5}.kvkk-metin ul{margin:4px 0 4px 18px;padding:0}
-.kvkk-kutu{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--paper);display:flex;gap:10px;align-items:flex-start;cursor:pointer}
-.kvkk-kutu input{width:22px;height:22px;margin-top:2px;flex:none}.kvkk-kutu.zorunlu{border-color:var(--accent);border-width:2px}
-.kvkk-kutu span{font-size:.93rem;line-height:1.45}.kvkk-kutu small{display:block;color:var(--muted);margin-top:3px}
-.pfoot{text-align:center;margin-top:4px}.pfoot button{background:none;border:0;color:var(--muted);text-decoration:underline;font-size:.85rem;cursor:pointer;padding:6px}
 .pmain{max-width:640px;width:100%;margin:0 auto;padding:20px 16px 104px;display:flex;flex-direction:column;gap:16px}
 .bnav{position:fixed;left:0;right:0;bottom:0;background:var(--paper);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);padding-bottom:env(safe-area-inset-bottom);z-index:20}
 .bnav button{border:0;background:transparent;padding:9px 4px 11px;font-weight:600;color:var(--muted);cursor:pointer;font-size:.82rem;display:flex;flex-direction:column;align-items:center;gap:2px;position:relative}
@@ -363,42 +357,6 @@ const SECIM={kendi:'Kendi başına yaptı',yardim:'Yardımla yaptı',zorlandi:'Z
 const SECIM_YAPTI=['kendi','yardim','zorlandi'],SECIM_YAPMADI=['unuttu','anlamadi','zaman','hasta','diger'];
 const ST_V={veli_tam:'Öğretmen kontrolünde',veli_eksik:'Eksik yapıldı',veli_yok:'Yapılmadı'};
 const DURUM={hastalik:'Hastalık',izin:'Okula gelemedi / izin',gorusme:'Öğretmenle görüşme talebi'};
-/* ---------- KVKK ---------- */
-const KVKK_SURUM='2026-11-v1';            /* metin değişirse SQL'deki kvkk_guncel_surum() ile birlikte artırın */
-const KVKK_SORUMLU='Sibel Erdem';
-function kvkkMetni(){return `<div class="kvkk-metin">
-<p><strong>Bu uygulama nedir?</strong> Takip Defteri, matematik öğretmeni ${KVKK_SORUMLU}’in ödev ve çalışma takibi için velilere gönüllü olarak sunduğu bir araçtır. Okulun ya da Millî Eğitim Bakanlığının resmî sistemi değildir. Kullanmak zorunlu değildir; kullanmamanız çocuğunuzun derslerini, notunu ya da öğretmenle iletişiminizi olumsuz etkilemez.</p>
-<h3>1. Veri sorumlusu</h3>
-<p>${KVKK_SORUMLU} (matematik öğretmeni). Sorularınızı ve başvurularınızı uygulamadaki “Notlar” bölümünden, okulda yüz yüze ya da yazılı olarak iletebilirsiniz.</p>
-<h3>2. Hangi bilgiler işlenir?</h3>
-<ul>
-<li><b>Veli:</b> adınız, size verilen 6 haneli veli kodu, giriş bilgileriniz (şifreniz şifrelenmiş saklanır; öğretmen dahil kimse göremez), onay kayıtlarınız ve bildirimleri açarsanız cihaz türünüz (ör. “Android · Chrome”).</li>
-<li><b>Öğrenci:</b> adı; görevler ve sizin “tamamlandı / eksik / yapılmadı” işaretleriniz, miktar ve kısa açıklamalarınız; günlük soru ve okuma kayıtları; okul ödevi durumu; deneme sınavı doğru-yanlış sayıları; öğretmenle yazışmalar; öğretmenin paylaştığı dosyalar ve dönem değerlendirmesi; “okula gelemedi / izin” ve “görüşme talebi” bildirimleri.</li>
-<li><b>Sağlık bilgisi:</b> yalnızca aşağıda ayrıca onay verirseniz, “hastalık” bildirimi ve “Hastaydı” seçeneği (ve yazdığınız açıklama). Bu bilgi KVKK’ya göre özel nitelikli kişisel veridir.</li>
-</ul>
-<p>T.C. kimlik numarası, adres, telefon, fotoğraf ya da okul numarası istenmez.</p>
-<h3>3. Hangi amaçla?</h3>
-<p>Çocuğunuzun ödev ve çalışma düzenini birlikte izlemek; öğretmenin geri bildirim vermesi ve gerekirse destek planlaması; sizinle iletişim; akşam hatırlatması ve yeni görev gibi bildirimler. Bilgiler reklam, ticari amaç ya da not verme için kullanılmaz; çocuğunuz hakkında otomatik karar verilmez.</p>
-<h3>4. Hukuki sebep ve toplama yöntemi</h3>
-<p>Bilgiler sizin ve öğretmenin uygulamaya girdiği kayıtlarla, elektronik ortamda toplanır. İşlemenin hukuki sebebi, aşağıda vereceğiniz <b>açık rızadır</b> (6698 sayılı KVKK m. 5/1). Sağlık bilgisi ayrı açık rızanıza dayanır (m. 6). Rıza vermezseniz uygulamayı kullanamazsınız; bunun dışında hiçbir sonucu yoktur.</p>
-<h3>5. Kimler görebilir, nereye aktarılır?</h3>
-<ul>
-<li>Çocuğunuzun kayıtlarını yalnızca <b>siz ve öğretmen</b> görürsünüz. Diğer veliler göremez.</li>
-<li>Grup panosunda öğrencilerin düzenli çalışma günü, okunan sayfa ve seri bilgileri ile gelişimde ilk 3 sıralaması yer alır. İzin verirseniz çocuğunuzun adı burada ve etkinlik akışında görünür; vermezseniz “Bir öğrenci” yazar. Puan, net, soru sayısı ve “yapılmadı” bilgisi hiçbir zaman başka velilere gösterilmez.</li>
-<li>Uygulamanın çalışması için şu hizmetler kullanılır: <b>Supabase Inc.</b> (veritabanı ve dosya saklama; sunucular <b>Almanya – Frankfurt</b>’ta olduğu için bilgiler yurt dışında saklanır), <b>GitHub</b> (sayfanın kendisini sunar; kişisel bilgi saklamaz). Telefon bildirimlerini açarsanız bildirim, telefonunuzun bildirim servisi (Google, Apple ya da Mozilla) üzerinden <b>şifreli</b> olarak iletilir.</li>
-<li>Bunların dışında hiçbir kişi ya da kurumla paylaşılmaz; yasal bir zorunluluk olursa yetkili makamlar hariçtir.</li>
-</ul>
-<h3>6. Ne kadar süre saklanır?</h3>
-<p>Çocuğunuzun bu gruptaki takibi bittiğinde ve en geç ilgili eğitim-öğretim yılının bitiminden sonraki 3 ay içinde bütün kayıtlar ve veli hesabı silinir. Rızanızı geri alırsanız öğretmen kayıtları gecikmeden siler.</p>
-<h3>7. Haklarınız (KVKK m. 11)</h3>
-<p>Bilgilerinizin işlenip işlenmediğini öğrenme, bilgi isteme, amacını ve kimlere aktarıldığını öğrenme, eksik ya da yanlışsa düzeltilmesini, silinmesini isteme, bu işlemlerin aktarılan kişilere bildirilmesini isteme, otomatik analiz sonucuna itiraz etme ve zarara uğrarsanız giderilmesini isteme haklarına sahipsiniz. Başvurunuz en geç 30 gün içinde ücretsiz yanıtlanır. Yanıttan memnun kalmazsanız Kişisel Verileri Koruma Kurulu’na şikâyette bulunabilirsiniz.</p>
-<h3>8. Rızanızı geri alma</h3>
-<p>Rızanızı istediğiniz an, uygulamanın altındaki “Gizlilik ve KVKK” bağlantısından geri alabilirsiniz. Geri aldığınız anda yeni kayıt giremezsiniz, telefon bildirimleri durur, sağlık bilgisi ve görünürlük hemen kaldırılır; öğretmene kayıtları silmesi için bildirim gider.</p>
-</div>`;}
-function kvkkDurumu(){return (S&&S.kvkkBen)||null;}
-function kvkkGecerli(){const k=kvkkDurumu();return !!(k&&k.onay_zamani&&!k.geri_alma&&k.surum===KVKK_SURUM);}
-function saglikIzni(){const k=kvkkDurumu();return kvkkGecerli()&&!!k.saglik;}
-function durumSecenekleri(){return Object.entries(DURUM).filter(([k])=>k!=='hastalik'||saglikIzni());}
 const AYLAR=['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
 const AYLAR_U=['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
 const GUN=['Paz','Pzt','Sal','Çar','Per','Cum','Cmt'];
@@ -474,7 +432,7 @@ async function yukle(){
   G=gl[0];if(!G) throw new Error('Bu hesaba bağlı bir grup bulunamadı.');
   const bas=addDays(G.donem_bas<G.yil_bas?G.donem_bas:G.yil_bas,-14);
   const ogrt=ME.rol==='ogretmen';
-  const [ogr,gor,hed,isr,kay,odv,den,son,nt,du,sab,sabg,dos,alc,bil,deg,kv]=await Promise.all([
+  const [ogr,gor,hed,isr,kay,odv,den,son,nt,du,sab,sabg,dos,alc,bil,deg]=await Promise.all([
     q(sb.from('ogrenciler').select('*').order('ad')),
     q(sb.from('gorevler').select('*')),
     q(sb.from('gorev_hedefleri').select('*').limit(20000)),
@@ -491,10 +449,9 @@ async function yukle(){
     q(sb.from('dosya_alicilari').select('*')),
     q(sb.from('bildirimler').select('*').order('olusturma',{ascending:false}).limit(100)),
     q(sb.from('degerlendirmeler').select('*')),
-    q(sb.from('kvkk_rizalari').select('*')),
   ]);
   const s={settings:ayarlarOku(G),students:[],tasks:[],marks:{},logs:[],exams:[],notes:[],durum:[],notifs:[],templates:[],files:[],evals:{}};
-  s.students=ogr.map(o=>({id:o.id,name:o.ad,parent:o.veli_ad||'',vis:o.gorunur,activeSince:o.aktif_bas,askida:o.askida,kod:o.veli_kodu,veliVar:!!o.veli_id,veliId:o.veli_id}));
+  s.students=ogr.map(o=>({id:o.id,name:o.ad,parent:o.veli_ad||'',vis:o.gorunur,activeSince:o.aktif_bas,askida:o.askida,kod:o.veli_kodu,veliVar:!!o.veli_id}));
   const tg={};hed.forEach(h=>(tg[h.gorev_id]=tg[h.gorev_id]||[]).push(h.ogrenci_id));
   s.tasks=gor.map(t=>({id:t.id,type:t.tur,ders:t.ders,title:t.baslik,desc:t.aciklama||'',given:t.verilis,due:t.son_gun,hedef:t.hedef,birim:t.birim,targets:tg[t.id]||[]}));
   isr.forEach(m=>{s.marks[m.gorev_id+'|'+m.ogrenci_id]={status:m.durum,at:tarihTR(m.isaret_zamani),tnote:m.ogretmen_notu,seen:m.goruldu,yapilan:m.yapilan,secim:m.veli_secim,vnote:m.veli_notu};});
@@ -513,7 +470,6 @@ async function yukle(){
   deg.forEach(d=>{s.evals[d.ogrenci_id]=d.metin||'';});
   if(!ogrt) ui.sid=(s.students[0]||{}).id||null;
   s.notifs=bil.map(b=>({id:b.id,sid:ui.sid,text:b.metin,at:tarihTR(b.olusturma),go:b.hedef,read:b.okundu}));
-  s.kvkk={};kv.forEach(k=>{s.kvkk[k.veli_id]=k;});s.kvkkBen=ogrt?null:(s.kvkk[ME.id]||null);
   S=s;
 }
 
@@ -1177,14 +1133,6 @@ function vGrup(){
   <section class="card">${enlerHtml(null)}</section>
   <section class="card"><div class="card-h"><h2>Etkinlik akışı · son 3 gün</h2></div><p class="small muted">Yalnızca olumlu etkinlikler; yorum yapılamaz. Netler, soru sayıları ve “yapılmadı” bilgileri burada hiç görünmez.</p>${feedHtml(null)}</section>`;
 }
-function kvkkRozet(s){
-  if(!s.veliVar) return '';
-  const k=S.kvkk[s.veliId];
-  if(!k||!k.onay_zamani) return '<div class="small"><span class="pill neutral">KVKK onayı bekleniyor</span></div>';
-  if(k.geri_alma) return `<div class="small"><span class="pill crit">Rıza geri alındı · ${fmt(tarihTR(k.geri_alma))}</span> <span class="muted">kayıtları silin</span></div>`;
-  if(k.surum!==KVKK_SURUM) return '<div class="small"><span class="pill warn">Yeni metin onayı bekleniyor</span></div>';
-  return `<div class="small"><span class="pill good">KVKK onaylı · ${fmt(tarihTR(k.onay_zamani))}</span> <span class="muted">Sağlık: ${k.saglik?'izinli':'izin yok'} · Grupta ad: ${k.gorunur?'görünür':'gizli'}</span></div>`;
-}
 function vAyarlar(){
   const st=S.settings;
   return `<div class="head"><div><h1>Ayarlar</h1><p>Grup bilgileri, hatırlatmalar, hedefler ve izinler.</p></div></div>
@@ -1207,11 +1155,10 @@ function vAyarlar(){
    <div class="step"><label for="tg-ok">Okuma (sayfa)</label><input id="tg-ok" type="number" min="0" style="width:100px" value="${st.okumaHedef}" data-a="set" data-k="okumaHedef"></div>
   </section>
   <section class="card"><h2>Veli hesapları ve grupta görünürlük</h2>
-   <p class="small muted">Veli hesabı açınca 6 haneli bir veli kodu ve şifre üretilir; şifre yalnızca o anda gösterilir. Şifresini unutan veli için “Yeni şifre” kullanın. Veli ilk girişte KVKK aydınlatma metnini okuyup açık rıza verir; onay vermeden kayıt giremez. Sağlık bilgisi ve grupta ad görünürlüğü velinin kendi tercihidir. Rızasını geri alan velinin öğrencisini “Sil” ile kaldırın; tüm kayıtları ve veli hesabı silinir.</p>
+   <p class="small muted">Veli hesabı açınca 6 haneli bir veli kodu ve şifre üretilir; şifre yalnızca o anda gösterilir. Şifresini unutan veli için “Yeni şifre” kullanın. Görünürlük izni KVKK rıza formuna göre işaretlenir; izin yoksa öğrenci enlerde ve akışta “Bir öğrenci” olarak görünür.</p>
    ${S.students.length?`<ul class="list">${S.students.map(s=>`<li><div><strong>${esc(s.name)}</strong> · ${esc(s.parent||'veli adı yok')}${s.askida?' <span class="pill crit">askıda</span>':''}
-     <div class="small muted">${s.veliVar?'Veli kodu: <code>'+esc(s.kod||'—')+'</code>':'Veli hesabı henüz açılmadı'}</div>
-     ${kvkkRozet(s)}</div>
-     <div class="row-btns">
+     <div class="small muted">${s.veliVar?'Veli kodu: <code>'+esc(s.kod||'—')+'</code>':'Veli hesabı henüz açılmadı'}</div></div>
+     <div class="row-btns"><label class="switch small"><input type="checkbox" data-a="vis" data-s="${s.id}" ${s.vis?'checked':''}> Grupta görünsün</label>
      ${s.veliVar?`<button class="btn sm" data-a="reactivate" data-s="${s.id}">${ui.confirmDel==='re'+s.id?'Emin misiniz?':'Yeni şifre'}</button>`:`<button class="btn sm pri" data-a="velihesap" data-s="${s.id}">Veli hesabı aç</button>`}<button class="btn sm ghost" data-a="ogrsil" data-s="${s.id}">${ui.confirmDel==='sil'+s.id?'Kalıcı silinsin mi?':'Sil'}</button></div></li>`).join('')}</ul>`:'<p class="empty">Henüz öğrenci yok. “Öğrenciler” sayfasından ekleyin.</p>'}</section>
   </div>`;
 }
@@ -1224,30 +1171,12 @@ const ICON={
   dosyalar:'<svg viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/></svg>',
   notlar:'<svg viewBox="0 0 24 24"><path d="M5 5h14v10H9l-4 4z"/></svg>'
 };
-function vKvkkOnay(){
-  const k=kvkkDurumu(),s=stu(ui.sid),eski=k&&k.onay_zamani&&!k.geri_alma&&k.surum!==KVKK_SURUM,geri=k&&k.geri_alma;
-  const red=ui.kvkkRed;
-  return `<div class="kvkk"><div class="brand"><span class="logo">${LOGO}</span><div><strong style="font-size:1.25rem">Takip Defteri</strong><small>Kişisel verilerin korunması</small></div></div>
-  ${eski?'<div class="banner info">Aydınlatma metni güncellendi. Devam etmek için lütfen yeni metni okuyup onaylayın.</div>':''}
-  ${geri?`<div class="banner warn">${fmt(tarihTR(k.geri_alma))} tarihinde açık rızanızı geri aldınız. Uygulamayı yeniden kullanmak isterseniz aşağıdan yeniden onay verebilirsiniz.</div>`:''}
-  ${red?`<section class="card"><h2>Onay vermediniz</h2><p>Sorun değil. Onay vermeden uygulama kullanılamaz, ama bu ${esc(s.name)} için hiçbir olumsuz sonuç doğurmaz. Çocuğunuzun çalışmalarını öğretmenle başka yollardan da paylaşabilirsiniz. Fikrinizi değiştirirseniz yeniden giriş yapmanız yeterli.</p><div class="actions"><button class="btn" data-a="kvkkgeri">Metne dön</button><button class="btn pri" data-a="logout">Çıkış yap</button></div></section></div>`:`
-  <section class="card"><h2>Aydınlatma metni</h2><p class="small muted">Velisi olduğunuz <b>${esc(s.name)}</b> ve sizinle ilgili bilgilerin nasıl kullanıldığını aşağıda okuyun. Sürüm ${KVKK_SURUM}.</p>${kvkkMetni()}</section>
-  <section class="card"><h2>Açık rıza</h2>
-   <label class="kvkk-kutu zorunlu"><input type="checkbox" id="kv-ana"><span><b>Aydınlatma metnini okudum ve anladım.</b> Kendi adıma ve velisi olduğum çocuğum adına, yukarıda yazılı bilgilerin bu metindeki amaçlarla işlenmesine ve Almanya’daki sunucularda saklanmasına özgür irademle açık rıza veriyorum.<small>Zorunlu — işaretlemeden uygulama kullanılamaz.</small></span></label>
-   <label class="kvkk-kutu"><input type="checkbox" id="kv-saglik"><span><b>Sağlık bilgisi (isteğe bağlı):</b> Çocuğum hastalandığında bunu uygulamadan bildirebilmek için “hastalık” bilgisinin ve yazdığım açıklamanın işlenmesine açık rıza veriyorum.<small>İşaretlemezseniz “Okula gelemedi / izin” seçeneğini kullanırsınız; sayaç yine durur.</small></span></label>
-   <label class="kvkk-kutu"><input type="checkbox" id="kv-gorunur"><span><b>Grupta ad görünürlüğü (isteğe bağlı):</b> Çocuğumun adı grup panosundaki “ilk 3” listesinde ve etkinlik akışında görünebilir.<small>İşaretlemezseniz “Bir öğrenci” olarak görünür.</small></span></label>
-   <p class="small muted">Bu iki isteğe bağlı tercihi daha sonra “Gizlilik ve KVKK” bölümünden değiştirebilirsiniz.</p>
-   <p class="err" id="kv-err"></p>
-   <div class="actions"><button class="btn" data-a="kvkkred">Onaylamıyorum</button><button class="btn pri" data-a="kvkkonay">Onaylıyorum ve devam et</button></div>
-  </section>
-  <div class="pfoot"><button data-a="logout">Çıkış yap</button></div></div>`}`;
-}
 function pShell(body){
   const s=stu(ui.sid),unread=S.notifs.filter(n=>n.sid===s.id&&!n.read).length;
   const nav=[['bugun','Bugün'],['gelisim','Gelişim'],['grup','Grup'],['dosyalar','Dosyalar'],['notlar','Notlar']];
   return `<header class="top"><div class="brand"><span class="logo">${LOGO}</span><div><strong>${esc(s.name)}</strong><small>Veli: ${esc(s.parent)}</small></div></div>
    <div class="top-r"><button class="iconbtn" data-a="bell" aria-label="Bildirimler">${BELL}${unread?`<span class="badge">${unread}</span>`:''}</button><button class="btn ghost sm" data-a="logout">Çıkış</button></div></header>
-   <main class="pmain">${body}<div class="pfoot"><button data-a="kvkkac">Gizlilik ve KVKK</button></div></main>
+   <main class="pmain">${body}</main>
    <nav class="bnav five" aria-label="Veli menüsü">${nav.map(([v,l])=>`<button class="${ui.pview===v?'on':''}" data-a="pgo" data-v="${v}">${ICON[v]}${l}</button>`).join('')}</nav>`;
 }
 function ptask(t,sid,ro){
@@ -1392,7 +1321,7 @@ function vModal(){
   }else if(m.type==='pmark'){
     const [tid]=m.key.split('|'),t=S.tasks.find(x=>x.id===tid),st=m.st,yok=st==='veli_yok';
     const bas={veli_tam:'✓ Tamamlandı',veli_eksik:'½ Eksik yapıldı',veli_yok:'✕ Yapılmadı'}[st];
-    const sec=(yok?SECIM_YAPMADI:SECIM_YAPTI).filter(x=>x!=='hasta'||saglikIzni());
+    const sec=yok?SECIM_YAPMADI:SECIM_YAPTI;
     inner=`<h2>${bas}</h2><p class="muted">${esc(t.title)}${t.hedef?` · hedef ${t.hedef} ${BIRIM[t.birim]}`:''}</p>
     ${!yok&&t.hedef?`<div class="field"><label for="pm-yap">Kaç ${BIRIM[t.birim]} yaptı?</label><div class="hedefrow"><input id="pm-yap" type="number" min="0" max="10000" inputmode="numeric" value="${st==='veli_tam'?t.hedef:''}" placeholder="Örn. ${Math.max(1,Math.round(t.hedef/2))}"><span class="muted">/ ${t.hedef} ${BIRIM[t.birim]}</span></div></div>`:''}
     <div class="field"><span class="lbl">${yok?'Neden yapılamadı?':'Nasıl yaptı?'} <span class="muted">(isteğe bağlı)</span></span><div class="chips" id="pm-secim">${sec.map(k=>`<button type="button" class="chipbtn" data-a="pmsec" data-v="${k}" aria-pressed="false">${SECIM[k]}</button>`).join('')}</div></div>
@@ -1411,7 +1340,7 @@ function vModal(){
     ${ui.role==='v'&&suspended(m.sid)?'<p class="small muted">Hesap askıdayken not gönderilemez.</p>':`<div class="field"><label for="msg-in">${me==='ogretmen'?'Veliye yanıt':'Öğretmene not'}</label><textarea id="msg-in" placeholder="Kısa ve bu konuyla ilgili…"></textarea></div>
     <div class="actions">${me==='ogretmen'&&last&&last.from==='veli'&&!last.seen?'<button class="btn" data-a="noreply">Yanıt gerekmiyor</button>':''}<button class="btn pri" data-a="sendnote">Gönder</button></div>`}`;
   }else if(m.type==='durum'){
-    inner=`<h2>Durum bildir</h2><div class="opts">${durumSecenekleri().map(([k,v],i)=>`<label><input type="radio" name="du-t" value="${k}" ${i===0?'checked':''}> ${v}</label>`).join('')}</div>
+    inner=`<h2>Durum bildir</h2><div class="opts">${Object.entries(DURUM).map(([k,v],i)=>`<label><input type="radio" name="du-t" value="${k}" ${i===0?'checked':''}> ${v}</label>`).join('')}</div>
     <div class="field"><label for="du-r">Hangi günler?</label><select id="du-r"><option value="0,0">Yalnızca bugün</option><option value="-1,0">Dün ve bugün</option><option value="-2,0">Son 3 gün</option><option value="0,1">Bugün ve yarın</option></select></div>
     <div class="field"><label for="du-x">Kısa açıklama (isteğe bağlı)</label><input id="du-x" type="text"></div>
     <p class="small muted">Hastalık ve izin günleri kayıt sayacına dahil edilmez.</p>
@@ -1440,24 +1369,12 @@ Veli kodu: ${esc(m.kod||'')}
       if(!items) items='<p class="empty">Bildirim yok.</p>';
     }
     inner=`<div class="card-h"><h2>Bildirimler</h2><button class="btn sm ghost" data-a="closemodal">Kapat</button></div>${pushKarti()}<div class="notifs">${items}</div>`;
-  }else if(m.type==='kvkk'){
-    const k=kvkkDurumu()||{},gk=ui.confirmDel==='kvgeri';
-    inner=`<h2>Gizlilik ve KVKK</h2>
-    <p class="small"><span class="pill good">Açık rıza verildi</span> ${k.onay_zamani?fmt(tarihTR(k.onay_zamani)):''} · sürüm ${esc(k.surum||'')}</p>
-    <details><summary class="small"><b>Aydınlatma metnini oku</b></summary>${kvkkMetni()}</details>
-    <h3 style="margin-top:14px">İsteğe bağlı tercihler</h3>
-    <label class="kvkk-kutu"><input type="checkbox" id="kg-saglik" ${k.saglik?'checked':''}><span><b>Sağlık bilgisi:</b> “Hastalık” bildirimi ve “Hastaydı” seçeneği kullanılabilsin.<small>Kapatırsanız geçmiş hastalık kayıtları “izin”e çevrilir ve açıklamaları silinir.</small></span></label>
-    <label class="kvkk-kutu" style="margin-top:8px"><input type="checkbox" id="kg-gorunur" ${k.gorunur?'checked':''}><span><b>Grupta ad görünürlüğü:</b> Çocuğumun adı grup panosunda ve akışta görünsün.</span></label>
-    <div class="actions"><button class="btn" data-a="closemodal">Kapat</button><button class="btn pri" data-a="kvkkkaydet">Tercihleri kaydet</button></div>
-    <h3 style="margin-top:18px">Açık rızayı geri al</h3>
-    <p class="small muted">Geri aldığınızda yeni kayıt giremezsiniz, telefon bildirimleri durur, sağlık bilgisi ve görünürlük hemen kaldırılır. Öğretmene kayıtları silmesi için bildirim gider. Bilgi almak, düzeltme ya da silme istemek için “Notlar” bölümünden öğretmene yazabilirsiniz.</p>
-    ${gk?'<div class="banner warn">Emin misiniz? Bu işlemden sonra uygulamayı kullanmak için yeniden onay vermeniz gerekir.</div>':''}
-    <div class="actions"><button class="btn ${gk?'danger':'ghost'}" data-a="kvkkgeriAl">${gk?'Evet, rızamı geri alıyorum':'Rızamı geri al'}</button></div>`;
   }else if(m.type==='student'){
     inner=`<h2>Öğrenci ekle</h2>
     <div class="field"><label for="ns-name">Öğrenci adı</label><input id="ns-name" type="text"></div>
     <div class="field"><label for="ns-parent">Veli adı</label><input id="ns-parent" type="text"></div>
     <label class="switch"><input id="ns-acc" type="checkbox" checked> Veli hesabını şimdi aç (kod ve şifre üretilir)</label>
+    <label class="switch"><input id="ns-vis" type="checkbox"> Veli grupta görünürlük iznini verdi (KVKK rıza formu)</label>
     <p class="err" id="ns-err"></p>
     <div class="actions"><button class="btn" data-a="closemodal">Vazgeç</button><button class="btn pri" data-a="savestudent">Ekle</button></div>`;
   }
@@ -1471,9 +1388,8 @@ function render(){
   else if(!ui.role) html=vLogin();
   else if(ui.role==='t'){const v={pano:vPano,gorevler:vGorevler,kontrol:vKontrol,notlar:vNotlar,denemeler:vDenemeler,dosyalar:vDosyalar,ogrenciler:vOgrenciler,grup:vGrup,ayarlar:vAyarlar}[ui.view]||vPano;html=tShell(v());}
   else if(!ui.sid) html=`<div class="login"><div class="login-box"><section class="card"><h2>Öğrenci bağlantısı bulunamadı</h2><p class="muted">Bu veli hesabı henüz bir öğrenciye bağlı değil. Lütfen öğretmenle iletişime geçin.</p><button class="btn" data-a="logout">Çıkış</button></section></div></div>`;
-  else if(!kvkkGecerli()) html=vKvkkOnay();
   else{const v={bugun:vPBugun,gelisim:vPGelisim,grup:vPGrup,dosyalar:vPDosyalar,notlar:vPNotlar}[ui.pview]||vPBugun;html=pShell(v());}
-  app.innerHTML=html+(ui.role&&!(ui.role==='v'&&ui.sid&&!kvkkGecerli())?vModal():'');
+  app.innerHTML=html+(ui.role?vModal():'');
   window.scrollTo(0,sy);
 }
 function toast(t){const e=document.createElement('div');e.className='toast';e.textContent=t;document.body.appendChild(e);setTimeout(()=>e.remove(),2600);}
@@ -1522,28 +1438,10 @@ document.addEventListener('click',async e=>{
   if(a==='upclear'){ui.upFiles=null;const i_=document.getElementById('up-file');if(i_)i_.value='';const s_=document.getElementById('up-sel');if(s_)s_.innerHTML='';return;}
   if(a==='bgclose'){if(e.target===el){ui.modal=null;render();}return;}
   if(['upmode','tgmode','exin','exmeta','exsoru','qin','qbook','set','setb','target','eval','vis'].includes(a)) return;
-  if(!['deltask','delexam','deltpl','delfile','velihesap','reactivate','ogrsil','kvkkgeriAl','kvkkkaydet'].includes(a)) ui.confirmDel=null;
+  if(!['deltask','delexam','deltpl','delfile','velihesap','reactivate','ogrsil'].includes(a)) ui.confirmDel=null;
   const k=el.dataset.k;
   switch(a){
-    case 'kvkkonay':{
-      const ana=document.getElementById('kv-ana').checked;
-      if(!ana){document.getElementById('kv-err').textContent='Devam etmek için ilk kutuyu işaretleyin ya da “Onaylamıyorum”u seçin.';return;}
-      const sag=document.getElementById('kv-saglik').checked,gor=document.getElementById('kv-gorunur').checked;
-      return yaz(()=>q(sb.rpc('kvkk_onayla',{p_surum:KVKK_SURUM,p_saglik:sag,p_gorunur:gor,p_cihaz:cihazAdi()})),'Teşekkürler, onayınız kaydedildi');}
-    case 'kvkkred': ui.kvkkRed=true;window.scrollTo(0,0);break;
-    case 'kvkkgeri': ui.kvkkRed=false;break;
-    case 'kvkkac': ui.modal={type:'kvkk'};break;
-    case 'kvkkkaydet':{
-      const sag=document.getElementById('kg-saglik').checked,gor=document.getElementById('kg-gorunur').checked,k=kvkkDurumu();
-      if(k.saglik&&!sag&&ui.confirmDel!=='kvsag'){ui.confirmDel='kvsag';toast('Sağlık izni kalkınca geçmiş “hastalık” kayıtları “izin”e çevrilir, açıklamaları silinir. Onay için tekrar basın');return;}
-      ui.confirmDel=null;ui.modal=null;
-      return yaz(()=>q(sb.rpc('kvkk_tercih',{p_saglik:sag,p_gorunur:gor,p_cihaz:cihazAdi()})),'Tercihleriniz kaydedildi');}
-    case 'kvkkgeriAl':{
-      if(ui.confirmDel!=='kvgeri'){ui.confirmDel='kvgeri';render();return;}
-      ui.confirmDel=null;ui.modal=null;
-      try{const ab=swKayit&&await swKayit.pushManager.getSubscription();if(ab)await ab.unsubscribe();}catch(_){}
-      return yaz(()=>q(sb.rpc('kvkk_geri_al',{p_cihaz:cihazAdi()})),'Rızanız geri alındı; öğretmene bildirildi');}
-    case 'logout': await sb.auth.signOut();Object.assign(ui,{role:null,sid:null,modal:null,profile:null,draft:null,openTask:null,openExam:null,board:null,kvkkRed:false});S=null;ME=null;G=null;break;
+    case 'logout': await sb.auth.signOut();Object.assign(ui,{role:null,sid:null,modal:null,profile:null,draft:null,openTask:null,openExam:null,board:null});S=null;ME=null;G=null;break;
     case 'go': return goTop(()=>{ui.view=el.dataset.v;ui.profile=null;ui.draft=null;});
     case 'pgo': goTop(()=>{ui.pview=el.dataset.v;});if(el.dataset.v==='grup'&&(!ui.board||ui.board.p!==ui.period))panoYukle();return;
     case 'student': return goTop(()=>{ui.view='ogrenciler';ui.profile=el.dataset.s;ui.chartDers='Toplam';});
@@ -1611,10 +1509,10 @@ document.addEventListener('click',async e=>{
 
     /* --- öğretmen: öğrenciler ve veli hesapları --- */
     case 'savestudent':{
-      const name=document.getElementById('ns-name').value.trim(),parent=document.getElementById('ns-parent').value.trim(),acc=document.getElementById('ns-acc').checked;
+      const name=document.getElementById('ns-name').value.trim(),parent=document.getElementById('ns-parent').value.trim(),vis=document.getElementById('ns-vis').checked,acc=document.getElementById('ns-acc').checked;
       if(!name||!parent){document.getElementById('ns-err').textContent='Öğrenci ve veli adını yazın.';return;}
       ui.modal=null;
-      const r=await yaz(async()=>{const [o]=await q(sb.from('ogrenciler').insert({grup_id:G.id,ad:name,veli_ad:parent,gorunur:false}).select('id'));
+      const r=await yaz(async()=>{const [o]=await q(sb.from('ogrenciler').insert({grup_id:G.id,ad:name,veli_ad:parent,gorunur:vis}).select('id'));
         if(acc){const h=await veliHesap('olustur',o.id);return {sid:o.id,...h};}return null;},'Öğrenci eklendi');
       if(r&&r.kod){ui.modal={type:'pin',sid:r.sid,kod:r.kod,pin:r.sifre,yeni:true};render();}
       return;}
@@ -1781,6 +1679,7 @@ document.addEventListener('change',e=>{
     if(kk==='yilBas') upd.yil_bas=st.yilBas;
     yaz(()=>q(sb.from('gruplar').update(upd).eq('id',G.id)),'Kaydedildi');
   }
+  else if(a==='vis'){yaz(()=>q(sb.from('ogrenciler').update({gorunur:el.checked}).eq('id',el.dataset.s)),'İzin güncellendi');}
   else if(a==='qin'){if(suspended(ui.sid))return;const d=el.dataset.d,v=Math.max(0,parseInt(el.value,10)||0);setLogLocal(ui.sid,ui.logDate,l=>{l.calismadik=false;if(d==='sayfa')l.sayfa=v;else if(v)l.soru[d]=v;else delete l.soru[d];});render();}
   else if(a==='qbook'){if(suspended(ui.sid))return;const v=el.value.trim(),l=getLog(ui.sid,ui.logDate);if(!l){toast('Kitap adı, sayfa sayısını seçince kaydedilir');return;}l.kitap=v;kayitKaydetPlanla(ui.sid,ui.logDate);toast('Kitap kaydedildi');}
 });
