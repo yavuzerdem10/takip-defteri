@@ -290,6 +290,9 @@ details summary{cursor:pointer;font-weight:700}
 .otri .tam.on{background:var(--good);border-color:var(--good);color:#fff}
 .otri .eksik.on{background:var(--warn);border-color:var(--warn);color:#fff}
 .otri .yok.on{background:var(--crit);border-color:var(--crit);color:#fff}
+.otri .yoktu.on{background:var(--muted);border-color:var(--muted);color:#fff}
+.otri button.yoktu{font-size:.68rem}
+@media (max-width:480px){.orow{grid-template-columns:1fr;gap:4px}.orow>span{font-weight:700}.otri button{flex:1;min-width:0;padding:6px 2px}}
 .files{display:flex;flex-wrap:wrap;gap:6px}
 .fchip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:5px 10px;cursor:pointer;font-size:.86rem;font-weight:600;color:var(--ink)}
 .fchip:hover{border-color:var(--accent)}
@@ -325,7 +328,7 @@ const GUN=['Paz','Pzt','Sal','Çar','Per','Cum','Cmt'];
 const GUN_U=['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
 const QS=[0,10,20,30,40],QP=[0,10,20,30,50];
 const OKUL_DERS=['Türkçe','Matematik','Fen Bilimleri','Sosyal Bilgiler','İngilizce','Din Kültürü'];
-const ODV={tam:['✓','Tamam','good'],eksik:['½','Eksik','warn'],yok:['✕','Yapmadı','crit']};
+const ODV={tam:['✓','Tamam','good'],eksik:['½','Eksik','warn'],yok:['✕','Yapmadı','crit'],yoktu:['–','Ödev yoktu','muted']};
 const DOSYA_TUR={deneme:'Deneme sonucu',test:'Test',fasikul:'Fasikül',diger:'Diğer'};
 
 /* ---------- yardımcılar ---------- */
@@ -518,10 +521,60 @@ function odevSum(sid,from,to){
   const o={gun:0,top:0,tam:0,eksik:0,yok:0,ders:{}};
   S.logs.forEach(l=>{
     if(l.sid!==sid||l.date<from||l.date>to) return;
-    const e=Object.entries(l.odev||{});if(e.length)o.gun++;
+    const e=Object.entries(l.odev||{}).filter(([d,v])=>v!=='yoktu');if(e.length)o.gun++;
     e.forEach(([d,v])=>{o.top++;o[v]++;const x=o.ders[d]=o.ders[d]||{top:0,tam:0,eksik:0,yok:0};x.top++;x[v]++;});
   });
   o.pct=o.top?o.tam/o.top:null;return o;
+}
+const MAX_DOSYA=50*1024*1024,KUCULT_ESIK=4*1024*1024;
+const mb=n=>(n/1048576).toLocaleString('tr-TR',{maximumFractionDigits:1})+' MB';
+const _scr={};
+function scriptYukle(src){return _scr[src]=_scr[src]||new Promise((ok,no)=>{const t=document.createElement('script');t.src=src;t.onload=ok;t.onerror=()=>{delete _scr[src];no(new Error('Kütüphane yüklenemedi; internet bağlantısını kontrol edin.'));};document.head.appendChild(t);});}
+async function pdfKutuphaneleri(pdfGerekli){
+  await scriptYukle('https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js');
+  if(pdfGerekli){await scriptYukle('https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js');
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';}
+}
+/* Sayfaları en fazla ~1600 piksel genişlikte JPEG'e çevirip yeni bir PDF kurar. */
+function kanvasKucult(w,h){const sc=Math.min(1,1600/Math.max(w,1));return [Math.max(1,Math.round(w*sc)),Math.max(1,Math.round(h*sc))];}
+async function sayfalardanPdf(sayfaSayisi,ciz,bilgi){
+  const {jsPDF}=window.jspdf;let doc=null;
+  for(let i=1;i<=sayfaSayisi;i++){
+    bilgi('Küçültülüyor… sayfa '+i+'/'+sayfaSayisi);
+    const {cv,wPt,hPt}=await ciz(i);
+    const jpg=cv.toDataURL('image/jpeg',0.72);
+    const or=wPt>hPt?'l':'p';
+    if(!doc) doc=new jsPDF({orientation:or,unit:'pt',format:[wPt,hPt],compress:true}); else doc.addPage([wPt,hPt],or);
+    doc.addImage(jpg,'JPEG',0,0,wPt,hPt,undefined,'FAST');
+    cv.width=cv.height=0;
+  }
+  return doc.output('blob');
+}
+async function dosyaHazirla(files,bilgi){
+  const f0=files[0];
+  if(/pdf/i.test(f0.type)||/\.pdf$/i.test(f0.name)){
+    if(f0.size<=KUCULT_ESIK) return f0;
+    bilgi('Dosya büyük ('+mb(f0.size)+'), küçültülüyor…');
+    await pdfKutuphaneleri(true);
+    const pdf=await window.pdfjsLib.getDocument({data:await f0.arrayBuffer()}).promise;
+    const out=await sayfalardanPdf(pdf.numPages,async i=>{
+      const pg=await pdf.getPage(i),v1=pg.getViewport({scale:1});
+      const [w,h]=kanvasKucult(v1.width*2.2,v1.height*2.2),vp=pg.getViewport({scale:w/v1.width});
+      const cv=document.createElement('canvas');cv.width=w;cv.height=h;const cx=cv.getContext('2d');cx.fillStyle='#fff';cx.fillRect(0,0,w,h);
+      await pg.render({canvasContext:cx,viewport:vp}).promise;pg.cleanup();
+      return {cv,wPt:v1.width,hPt:v1.height};
+    },bilgi);
+    pdf.destroy();
+    return out.size<f0.size?out:f0;
+  }
+  await pdfKutuphaneleri(false);
+  return sayfalardanPdf(files.length,async i=>{
+    const bmp=await createImageBitmap(files[i-1]);
+    const [w,h]=kanvasKucult(bmp.width,bmp.height);
+    const cv=document.createElement('canvas');cv.width=w;cv.height=h;const cx=cv.getContext('2d');cx.fillStyle='#fff';cx.fillRect(0,0,w,h);cx.drawImage(bmp,0,0,w,h);bmp.close&&bmp.close();
+    const wPt=595.28,hPt=wPt*h/w;  /* A4 genişliği */
+    return {cv,wPt,hPt};
+  },bilgi);
 }
 const visibleFiles=sid=>(S.files||[]).filter(f=>ui.role==='t'||f.kime==='all'||(Array.isArray(f.kime)&&f.kime.includes(sid)));
 const filesFor=(ref,sid)=>visibleFiles(sid).filter(f=>f.ref===ref);
@@ -967,7 +1020,7 @@ function vDosyalar(){
   const refTxt=r=>!r?'—':topic(r);
   return `<div class="head"><div><h1>Dosyalar</h1><p>Deneme sonuçları, testler, fasiküller ve diğer PDF'ler. Her dosyanın kime görüneceğini siz seçersiniz.</p></div></div>
   <section class="card"><h2>PDF yükle</h2>
-   <div class="dropzone"><label class="lbl" for="up-file">Dosya (yalnızca PDF, en fazla 10 MB)</label><input id="up-file" type="file" accept="application/pdf,.pdf"></div>
+   <div class="dropzone"><label class="lbl" for="up-file">Dosya: PDF ya da sayfa fotoğrafları (JPG/PNG, birden çok seçilebilir). Büyük dosyalar yüklemeden önce kendiliğinden küçültülür.</label><input id="up-file" type="file" multiple accept="application/pdf,.pdf,image/jpeg,image/png,.jpg,.jpeg,.png"></div>
    <div class="row"><div class="field"><label for="up-title">Başlık</label><input id="up-title" type="text" placeholder="Örn. Deneme 5 cevap anahtarı"></div>
     <div class="field"><label for="up-tur">Tür</label><select id="up-tur">${Object.entries(DOSYA_TUR).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select></div></div>
    <div class="field"><label for="up-ref">Bağlı olduğu yer (isteğe bağlı)</label><select id="up-ref"><option value="">Bağımsız dosya</option>
@@ -1051,9 +1104,9 @@ function logCard(sid,ro){
     <div class="qchips">${vals.map(n=>`<button class="${l&&!l.calismadik&&val===n?'on':''}" data-a="q" data-d="${esc(id)}" data-n="${n}" ${ro?'disabled':''}>${n}</button>`).join('')}<input type="number" min="0" inputmode="numeric" placeholder="Diğer" value="${l&&!vals.includes(val)&&val?val:''}" data-a="qin" data-d="${esc(id)}" aria-label="${label} sayısı" ${ro?'disabled':''}></div></div>`;
   const tot=l?Object.values(l.soru||{}).reduce((a,b)=>a+b,0):0;
   const od=(l&&l.odev)||{};
-  const odevHtml=`<div class="sec"><h3>Okul ödevleri</h3><p class="small muted">Bugün ödevi olan derslerde durumu seçin; ödevi olmayan dersi boş bırakın. Yanlış seçimi düzeltmek için aynı düğmeye yeniden dokunun.</p>
-   ${okulDersleri().map(d=>`<div class="orow"><span>${esc(d)}</span><div class="otri" role="group" aria-label="${esc(d)} ödevi">${['tam','eksik','yok'].map(v=>`<button class="${v} ${od[d]===v?'on':''}" data-a="odv" data-d="${esc(d)}" data-v="${v}" aria-pressed="${od[d]===v}" ${ro?'disabled':''}><b>${ODV[v][0]}</b>${ODV[v][1]}</button>`).join('')}</div></div>`).join('')}
-   <div class="row-btns"><button class="btn sm ${l&&l.odevYok?'pri':''}" data-a="odvyok" ${ro?'disabled':''}>${l&&l.odevYok?'✓ ':''}${date===TODAY?'Bugün':'O gün'} ödev yoktu</button></div></div>`;
+  const odevHtml=`<div class="sec"><h3>Okul ödevleri</h3><p class="small muted">Her ders için bir seçenek işaretleyin: ödev verildiyse Tamam / Eksik / Yapmadı, verilmediyse “Ödev yoktu”. Yanlış seçimi düzeltmek için aynı düğmeye yeniden dokunun.</p>
+   ${okulDersleri().map(d=>`<div class="orow"><span>${esc(d)}</span><div class="otri" role="group" aria-label="${esc(d)} ödevi">${['tam','eksik','yok','yoktu'].map(v=>`<button class="${v} ${od[d]===v?'on':''}" data-a="odv" data-d="${esc(d)}" data-v="${v}" aria-pressed="${od[d]===v}" ${ro?'disabled':''}><b>${ODV[v][0]}</b>${ODV[v][1]}</button>`).join('')}</div></div>`).join('')}
+   <div class="row-btns"><button class="btn sm ${l&&l.odevYok?'pri':''}" data-a="odvyok" ${ro?'disabled':''}>${l&&l.odevYok?'✓ ':''}${date===TODAY?'Bugün':'O gün'} hiçbir dersten ödev yoktu</button></div></div>`;
   return `<section class="card"><div class="card-h"><h2>Günlük kayıt</h2><div class="daytabs">${[TODAY,y].map(d=>`<button class="chipbtn ${d===date?'on':''}" data-a="logdate" data-v="${d}">${d===TODAY?'Bugün':'Dün'}</button>`).join('')}</div></div>
    <p class="small muted">${fmtLong(date)} · Her dokunuş kendiliğinden kaydedilir.</p>
    ${l?(l.calismadik?'<div class="banner info small">Bu gün için “çalışmadık” kaydı girildi. Sayılara dokunursanız kayıt güncellenir.</div>':`<span class="saved" id="kayit-durum">✓ Kaydedildi · toplam ${tot} soru${l.sayfa?', '+l.sayfa+' sayfa':''}</span>`):'<span class="small muted">Bu gün için henüz kayıt yok.</span>'}
@@ -1384,24 +1437,35 @@ document.addEventListener('click',async e=>{
     case 'delfile':{const id=el.dataset.id;if(ui.confirmDel!==id){ui.confirmDel=id;break;}ui.confirmDel=null;const f=S.files.find(x=>x.id===id);
       return yaz(async()=>{await sb.storage.from('dosyalar').remove([f.path]);await q(sb.from('dosyalar').delete().eq('id',id));},'Dosya silindi');}
     case 'upload':{
-      const inp=document.getElementById('up-file'),err=document.getElementById('up-err'),f=inp.files&&inp.files[0];
+      const inp=document.getElementById('up-file'),err=document.getElementById('up-err'),files=[...(inp.files||[])];
       const title=document.getElementById('up-title').value.trim(),mode=(document.querySelector('input[name="up-k"]:checked')||{}).value;
       const sel=[...document.querySelectorAll('#up-checks input:checked')].map(i=>i.value);
-      if(!f){err.textContent='Önce bir PDF dosyası seçin.';return;}
-      if(!(f.type==='application/pdf'||/\.pdf$/i.test(f.name))){err.textContent='Yalnızca PDF yüklenebilir.';return;}
-      if(f.size>10*1024*1024){err.textContent='Dosya 10 MB’tan büyük. Daha küçük bir PDF seçin.';return;}
+      if(!files.length){err.textContent='Önce bir PDF ya da fotoğraf seçin.';return;}
+      const isPdf=x=>x.type==='application/pdf'||/\.pdf$/i.test(x.name),isImg=x=>/^image\/(jpeg|png)$/.test(x.type)||/\.(jpe?g|png)$/i.test(x.name);
+      if(files.some(isPdf)&&files.length>1){err.textContent='PDF tek başına seçilmeli (fotoğraflar birden çok seçilebilir).';return;}
+      if(!files.every(x=>isPdf(x)||isImg(x))){err.textContent='Yalnızca PDF ya da JPG/PNG fotoğraf yüklenebilir.';return;}
       if(mode==='sel'&&!sel.length){err.textContent='En az bir öğrenci seçin.';return;}
       const ref=document.getElementById('up-ref').value,kime=mode==='sel'?'secili':mode==='teacher'?'ogretmen':'tum';
-      const path=G.id+'/'+crypto.randomUUID()+'.pdf';
-      err.textContent='Yükleniyor…';
-      return yaz(async()=>{
-        const {error}=await sb.storage.from('dosyalar').upload(path,f,{contentType:'application/pdf'});if(error)throw error;
-        const row={grup_id:G.id,baslik:title||f.name.replace(/\.pdf$/i,''),tur:document.getElementById('up-tur').value,kime,depo_yolu:path,dosya_adi:f.name,boyut:f.size,
-          konu_turu:ref?(ref.startsWith('task:')?'gorev':'deneme'):null,konu_id:ref?ref.split(':')[1]:null};
-        const [d]=await q(sb.from('dosyalar').insert(row).select('id'));
-        if(kime==='secili') await q(sb.from('dosya_alicilari').insert(sel.map(o=>({dosya_id:d.id,ogrenci_id:o}))));
-        ui.upRef='';
-      },kime==='ogretmen'?'Yüklendi (yalnızca sizde)':'Yüklendi; velilere bildirim gitti');}
+      const path=G.id+'/'+crypto.randomUUID()+'.pdf',tur=document.getElementById('up-tur').value;
+      const ad=isPdf(files[0])?files[0].name:(files[0].name.replace(/\.[^.]+$/,'')+(files.length>1?' (+'+(files.length-1)+')':'')+'.pdf');
+      const btn=el;btn.disabled=true;
+      (async()=>{
+        let f;
+        try{f=await dosyaHazirla(files,m=>{err.textContent=m;});}
+        catch(e){btn.disabled=false;err.textContent='Dosya hazırlanamadı: '+(e.message||e);return;}
+        if(f.size>MAX_DOSYA){btn.disabled=false;err.textContent='Dosya küçültüldükten sonra bile '+mb(f.size)+'. En fazla '+mb(MAX_DOSYA)+' olabilir; dosyayı parçalara bölüp ayrı ayrı yükleyin.';return;}
+        err.textContent='Yükleniyor… ('+mb(f.size)+')';
+        await yaz(async()=>{
+          const {error}=await sb.storage.from('dosyalar').upload(path,f,{contentType:'application/pdf'});if(error)throw error;
+          const row={grup_id:G.id,baslik:title||ad.replace(/\.pdf$/i,''),tur,kime,depo_yolu:path,dosya_adi:ad,boyut:f.size,
+            konu_turu:ref?(ref.startsWith('task:')?'gorev':'deneme'):null,konu_id:ref?ref.split(':')[1]:null};
+          const [d]=await q(sb.from('dosyalar').insert(row).select('id'));
+          if(kime==='secili') await q(sb.from('dosya_alicilari').insert(sel.map(o=>({dosya_id:d.id,ogrenci_id:o}))));
+          ui.upRef='';
+        },kime==='ogretmen'?'Yüklendi (yalnızca sizde)':'Yüklendi; velilere bildirim gitti');
+        btn.disabled=false;
+      })();
+      return;}
 
     /* --- veli --- */
     case 'pm':{if(suspended(ui.sid))return;const st=el.dataset.st;
