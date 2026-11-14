@@ -198,6 +198,7 @@ textarea{min-height:80px;resize:vertical}
 .err{color:var(--crit);font-size:.9rem}
 
 /* veli */
+.pfoot{text-align:center;margin-top:4px}.pfoot button{background:none;border:0;color:var(--muted);text-decoration:underline;font-size:.85rem;cursor:pointer;padding:6px}
 .pmain{max-width:640px;width:100%;margin:0 auto;padding:20px 16px 104px;display:flex;flex-direction:column;gap:16px}
 .bnav{position:fixed;left:0;right:0;bottom:0;background:var(--paper);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);padding-bottom:env(safe-area-inset-bottom);z-index:20}
 .bnav button{border:0;background:transparent;padding:9px 4px 11px;font-weight:600;color:var(--muted);cursor:pointer;font-size:.82rem;display:flex;flex-direction:column;align-items:center;gap:2px;position:relative}
@@ -401,6 +402,7 @@ function weekdaysBack(n){const out=[];let d=addDays(TODAY,-1);while(out.length<n
 const SB_URL='https://fyepdtgrdnjkvubpcitg.supabase.co';
 const SB_KEY='sb_publishable_p-HWiul2F2XpTOFO0E9uFA_P9MXqwdM';   // herkese açık anahtar (tarayıcıda görünmesi normal)
 const VELI_EPOSTA=kod=>'v'+kod+'@veli.example.com';
+const AD_KURALI=/^[a-z0-9._]{4,20}$/;
 const DERS_SUTUN={'Matematik':'soru_mat','Türkçe':'soru_turkce','Fen Bilimleri':'soru_fen','Sosyal Bilgiler':'soru_sosyal','İngilizce':'soru_ing'};
 const DEF_EXAM=[{ad:'Türkçe',soru:20},{ad:'Matematik',soru:20},{ad:'Fen Bilimleri',soru:20},{ad:'Sosyal Bilgiler',soru:10},{ad:'İngilizce',soru:10},{ad:'Din Kültürü',soru:10}];
 let sb=null,S=null,G=null,ME=null;
@@ -437,7 +439,7 @@ async function yukle(){
   G=gl[0];if(!G) throw new Error('Bu hesaba bağlı bir grup bulunamadı.');
   const bas=addDays(G.donem_bas<G.yil_bas?G.donem_bas:G.yil_bas,-14);
   const ogrt=ME.rol==='ogretmen';
-  const [ogr,gor,hed,isr,kay,odv,den,son,nt,du,sab,sabg,dos,alc,bil,deg]=await Promise.all([
+  const [ogr,gor,hed,isr,kay,odv,den,son,nt,du,sab,sabg,dos,alc,bil,deg,vp]=await Promise.all([
     q(sb.from('ogrenciler').select('*').order('ad')),
     q(sb.from('gorevler').select('*')),
     q(sb.from('gorev_hedefleri').select('*').limit(20000)),
@@ -454,9 +456,10 @@ async function yukle(){
     q(sb.from('dosya_alicilari').select('*')),
     q(sb.from('bildirimler').select('*').order('olusturma',{ascending:false}).limit(100)),
     q(sb.from('degerlendirmeler').select('*')),
+    ogrt?q(sb.from('profiller').select('id,kullanici_adi,sifre_degisti').eq('rol','veli')):Promise.resolve([]),
   ]);
   const s={settings:ayarlarOku(G),students:[],tasks:[],marks:{},logs:[],exams:[],notes:[],durum:[],notifs:[],templates:[],files:[],evals:{}};
-  s.students=ogr.map(o=>({id:o.id,name:o.ad,parent:o.veli_ad||'',vis:o.gorunur,activeSince:o.aktif_bas,askida:o.askida,kod:o.veli_kodu,veliVar:!!o.veli_id}));
+  s.students=ogr.map(o=>({id:o.id,name:o.ad,parent:o.veli_ad||'',vis:o.gorunur,activeSince:o.aktif_bas,askida:o.askida,kod:o.veli_kodu,veliVar:!!o.veli_id,veliAd:(vp.find(p=>p.id===o.veli_id)||{}).kullanici_adi||null,veliSifre:!!(vp.find(p=>p.id===o.veli_id)||{}).sifre_degisti}));
   const tg={};hed.forEach(h=>(tg[h.gorev_id]=tg[h.gorev_id]||[]).push(h.ogrenci_id));
   s.tasks=gor.map(t=>({id:t.id,type:t.tur,ders:t.ders,title:t.baslik,desc:t.aciklama||'',given:t.verilis,due:t.son_gun,hedef:t.hedef,birim:t.birim,targets:tg[t.id]||[]}));
   isr.forEach(m=>{s.marks[m.gorev_id+'|'+m.ogrenci_id]={status:m.durum,at:tarihTR(m.isaret_zamani),tnote:m.ogretmen_notu,seen:m.goruldu,yapilan:m.yapilan,secim:m.veli_secim,vnote:m.veli_notu};});
@@ -486,8 +489,8 @@ async function yaz(fn,okMsg,hataCb){
   catch(e){console.error(e);toast(hataMetni(e));if(hataCb)hataCb(e);}
   finally{ui.busy=false;document.body.classList.remove('busy');}
 }
-async function veliHesap(islem,ogrenci_id){
-  const {data,error}=await sb.functions.invoke('veli-hesap',{body:{islem,ogrenci_id}});
+async function veliHesap(islem,ogrenci_id,ek){
+  const {data,error}=await sb.functions.invoke('veli-hesap',{body:Object.assign({islem,ogrenci_id},ek||{})});
   if(error){let m=error.message;try{const b=await error.context.json();m=b.hata||m;}catch(_){}throw new Error(m);}
   if(data&&data.hata) throw new Error(data.hata);
   return data;
@@ -884,9 +887,9 @@ function vLogin(){
    <div class="brand"><span class="logo">${LOGO}</span><div><strong style="font-size:1.6rem">Takip Defteri</strong><small>Öğretmen–veli takip sistemi</small></div></div>
    ${ui.loginErr?`<p class="err" role="alert">${esc(ui.loginErr)}</p>`:''}
    <div class="login-grid">
-    <form class="card" data-form="veli"><h2>Veli girişi</h2><p class="muted small">Öğretmenin verdiği 6 haneli veli kodu ve şifreyle girin.</p>
-     <div class="field"><label for="lv-k">Veli kodu</label><input id="lv-k" name="username" type="text" inputmode="numeric" autocomplete="username" maxlength="6" placeholder="örn. 482913"></div>
-     <div class="field"><label for="lv-p">Şifre</label><input id="lv-p" name="password" type="password" inputmode="numeric" autocomplete="current-password"></div>
+    <form class="card" data-form="veli"><h2>Veli girişi</h2><p class="muted small">Öğretmenin verdiği 6 haneli veli kodu ya da kendi belirlediğiniz kullanıcı adıyla girin.</p>
+     <div class="field"><label for="lv-k">Veli kodu veya kullanıcı adı</label><input id="lv-k" name="username" type="text" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="20" placeholder="örn. 482913"></div>
+     <div class="field"><label for="lv-p">Şifre</label><input id="lv-p" name="password" type="password" autocomplete="current-password"></div>
      <button class="btn pri wide" type="submit">Giriş yap</button></form>
     <form class="card" data-form="ogretmen"><h2>Öğretmen girişi</h2><p class="muted small">E-posta ve şifrenizle girin.</p>
      <div class="field"><label for="lt-e">E-posta</label><input id="lt-e" name="email" type="email" autocomplete="username"></div>
@@ -1162,7 +1165,7 @@ function vAyarlar(){
   <section class="card"><h2>Veli hesapları ve grupta görünürlük</h2>
    <p class="small muted">Veli hesabı açınca 6 haneli bir veli kodu ve şifre üretilir; şifre yalnızca o anda gösterilir. Şifresini unutan veli için “Yeni şifre” kullanın. Görünürlük izni KVKK rıza formuna göre işaretlenir; izin yoksa öğrenci enlerde ve akışta “Bir öğrenci” olarak görünür.</p>
    ${S.students.length?`<ul class="list">${S.students.map(s=>`<li><div><strong>${esc(s.name)}</strong> · ${esc(s.parent||'veli adı yok')}${s.askida?' <span class="pill crit">askıda</span>':''}
-     <div class="small muted">${s.veliVar?'Veli kodu: <code>'+esc(s.kod||'—')+'</code>':'Veli hesabı henüz açılmadı'}</div></div>
+     <div class="small muted">${s.veliVar?'Veli kodu: <code>'+esc(s.kod||'—')+'</code>'+(s.veliAd?' · kullanıcı adı: <code>'+esc(s.veliAd)+'</code>':'')+(s.veliSifre?' · şifresini değiştirdi':' · ilk şifreyi kullanıyor'):'Veli hesabı henüz açılmadı'}</div></div>
      <div class="row-btns"><label class="switch small"><input type="checkbox" data-a="vis" data-s="${s.id}" ${s.vis?'checked':''}> Grupta görünsün</label>
      ${s.veliVar?`<button class="btn sm" data-a="reactivate" data-s="${s.id}">${ui.confirmDel==='re'+s.id?'Emin misiniz?':'Yeni şifre'}</button>`:`<button class="btn sm pri" data-a="velihesap" data-s="${s.id}">Veli hesabı aç</button>`}<button class="btn sm ghost" data-a="ogrsil" data-s="${s.id}">${ui.confirmDel==='sil'+s.id?'Kalıcı silinsin mi?':'Sil'}</button></div></li>`).join('')}</ul>`:'<p class="empty">Henüz öğrenci yok. “Öğrenciler” sayfasından ekleyin.</p>'}</section>
   </div>`;
@@ -1181,7 +1184,7 @@ function pShell(body){
   const nav=[['bugun','Bugün'],['gelisim','Gelişim'],['grup','Grup'],['dosyalar','Dosyalar'],['notlar','Notlar']];
   return `<header class="top"><div class="brand"><span class="logo">${LOGO}</span><div><strong>${esc(s.name)}</strong><small>Veli: ${esc(s.parent)}</small></div></div>
    <div class="top-r"><button class="iconbtn" data-a="bell" aria-label="Bildirimler">${BELL}${unread?`<span class="badge">${unread}</span>`:''}</button><button class="btn ghost sm" data-a="logout">Çıkış</button></div></header>
-   <main class="pmain">${body}</main>
+   <main class="pmain">${body}<div class="pfoot"><button data-a="hesap">Kullanıcı adı ve şifre</button></div></main>
    <nav class="bnav five" aria-label="Veli menüsü">${nav.map(([v,l])=>`<button class="${ui.pview===v?'on':''}" data-a="pgo" data-v="${v}">${ICON[v]}${l}</button>`).join('')}</nav>`;
 }
 function ptask(t,sid,ro){
@@ -1228,6 +1231,7 @@ function vPBugun(){
   if(ro) banner=`<div class="banner crit"><strong>Hesap askıya alındı</strong><span class="small">İş günlerinde üst üste kayıt girilmedi. Bilgileri görebilirsiniz ama yeni işaret ya da kayıt giremezsiniz. Öğretmeniniz hesabı yeniden açtığında size yeni bir şifre iletilecek.</span></div>`;
   else if(mi===2) banner=`<div class="banner warn"><strong>2 iş günüdür kayıt yok</strong><span class="small">Bugün kayıt girilmezse hesap yarın askıya alınır. Hastalık ya da izin varsa durum bildirin; o günler sayılmaz.</span><div><button class="btn sm" data-a="durum">Durum bildir</button></div></div>`;
   else if(mi===1) banner=`<div class="banner info small">Dün için kayıt yok. “Dün” sekmesinden ekleyebilirsiniz.</div>`;
+  if(!ro&&ME&&!ME.sifre_degisti) banner+=`<div class="banner info"><strong>Şifrenizi değiştirin</strong><span class="small">Öğretmenin verdiği geçici şifre yerine kendi şifrenizi belirleyin. İsterseniz kolay hatırlanır bir kullanıcı adı da seçebilirsiniz.</span><div><button class="btn sm pri" data-a="hesap">Şifremi değiştir</button></div></div>`;
   if(!ro) banner+=pushBanner();
   const open=parentOpenToday(sid).sort((a,b)=>a.due.localeCompare(b.due));
   const marked=assigned(sid).filter(t=>statusOf(t,sid).startsWith('veli_')).sort((a,b)=>markOf(b,sid).at.localeCompare(markOf(a,sid).at));
@@ -1425,10 +1429,27 @@ function vModal(){
     <div class="field"><label for="du-x">Kısa açıklama (isteğe bağlı)</label><input id="du-x" type="text"></div>
     <p class="small muted">Hastalık ve izin günleri kayıt sayacına dahil edilmez.</p>
     <div class="actions"><button class="btn" data-a="closemodal">Vazgeç</button><button class="btn pri" data-a="savedurum">Bildir</button></div>`;
+  }else if(m.type==='hesap'){
+    const kod=(stu(ui.sid)||{}).kod||'';
+    inner=`<h2>Kullanıcı adı ve şifre</h2>
+    <p class="small muted">Şu an giriş: ${ME.kullanici_adi?`kullanıcı adı <b>${esc(ME.kullanici_adi)}</b>`:`veli kodu <b>${esc(kod)}</b>`}</p>
+    <form data-form="hsifre" autocomplete="on"><h3>Şifre</h3>
+     <input type="text" name="username" autocomplete="username" value="${esc(ME.kullanici_adi||kod)}" hidden>
+     <div class="field"><label for="hs-eski">Mevcut şifre</label><input id="hs-eski" type="password" autocomplete="current-password"></div>
+     <div class="field"><label for="hs-yeni">Yeni şifre</label><input id="hs-yeni" type="password" autocomplete="new-password"></div>
+     <div class="field"><label for="hs-tekrar">Yeni şifre (tekrar)</label><input id="hs-tekrar" type="password" autocomplete="new-password"></div>
+     <p class="small muted">En az 6 karakter. Harf ve rakam karışık bir şifre daha güvenlidir.</p>
+     <p class="err" id="hs-err"></p>
+     <div class="actions"><button class="btn pri" type="submit">Şifreyi değiştir</button></div></form>
+    <form data-form="hadi" style="margin-top:14px"><h3>Kullanıcı adı (isteğe bağlı)</h3>
+     <div class="field"><label for="ha-ad">Yeni kullanıcı adı</label><input id="ha-ad" type="text" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="20" value="${esc(ME.kullanici_adi||'')}" placeholder="örn. fatma.kaya"></div>
+     <p class="small muted">4–20 karakter: İngilizce küçük harf (ç, ğ, ı, ö, ş, ü olmadan), rakam, nokta ya da alt çizgi. Belirlerseniz bundan sonra veli kodu yerine bununla girersiniz.</p>
+     <p class="err" id="ha-err"></p>
+     <div class="actions"><button class="btn" data-a="closemodal" type="button">Kapat</button><button class="btn pri" type="submit">Kullanıcı adını kaydet</button></div></form>`;
   }else if(m.type==='pin'){
     const st=stu(m.sid)||{name:''},adres=location.origin+location.pathname;
     inner=`<h2>${m.yeni?'Veli hesabı açıldı':'Yeni şifre üretildi'}</h2><p>${esc(st.name)} · veli giriş bilgileri:</p>
-    <div class="tiles"><div class="tile"><b style="letter-spacing:.12em">${esc(m.kod||'')}</b><span>Veli kodu</span></div><div class="tile pen"><b style="letter-spacing:.12em">${esc(m.pin)}</b><span>Şifre</span></div></div>
+    ${m.yeni?'':'<p class="small muted">Veli kendi kullanıcı adını belirlemişse sıfırlandı; yeniden veli koduyla girer ve isterse yeni bir ad seçer.</p>'}<div class="tiles"><div class="tile"><b style="letter-spacing:.12em">${esc(m.kod||'')}</b><span>Veli kodu</span></div><div class="tile pen"><b style="letter-spacing:.12em">${esc(m.pin)}</b><span>Şifre</span></div></div>
     <pre class="report" id="cred-txt">Takip Defteri giriş bilgileri
 Öğrenci: ${esc(st.name)}
 Adres: ${esc(adres)}
@@ -1501,10 +1522,25 @@ async function girisYap(email,sifre){
 document.addEventListener('submit',e=>{
   const f=e.target;if(!f.dataset||!f.dataset.form) return;
   e.preventDefault();
+  if(f.dataset.form==='hsifre'){
+    const eski=document.getElementById('hs-eski').value,yeni=document.getElementById('hs-yeni').value,tk=document.getElementById('hs-tekrar').value,er=document.getElementById('hs-err');
+    if(!eski){er.textContent='Mevcut şifrenizi yazın.';return;}
+    if(yeni.length<6){er.textContent='Yeni şifre en az 6 karakter olmalı.';return;}
+    if(yeni!==tk){er.textContent='Yeni şifreler birbirini tutmuyor.';return;}
+    yaz(()=>veliHesap('sifre_degistir',null,{eski,yeni}).then(()=>{ME.sifre_degisti=true;ui.modal=null;}),'Şifreniz değiştirildi',e=>{const x=document.getElementById('hs-err');if(x)x.textContent=hataMetni(e);});
+    return;
+  }
+  if(f.dataset.form==='hadi'){
+    const ad=(document.getElementById('ha-ad').value||'').trim().toLowerCase(),er=document.getElementById('ha-err');
+    if(!AD_KURALI.test(ad)||!/[a-z]/.test(ad)||/^v\d{6}$/.test(ad)){er.textContent='4–20 karakter; yalnızca İngilizce küçük harf, rakam, nokta ve alt çizgi. En az bir harf olmalı.';return;}
+    yaz(()=>veliHesap('kullanici_adi',null,{ad}).then(r=>{ME.kullanici_adi=r.ad;ui.modal=null;}),'Kullanıcı adınız kaydedildi. Bundan sonra “'+ad+'” ile girin.',e=>{const x=document.getElementById('ha-err');if(x)x.textContent=hataMetni(e);});
+    return;
+  }
   if(f.dataset.form==='veli'){
-    const kod=(document.getElementById('lv-k').value||'').replace(/\D/g,''),p=document.getElementById('lv-p').value;
-    if(kod.length!==6){ui.loginErr='Veli kodu 6 haneli olmalı.';render();return;}
-    girisYap(VELI_EPOSTA(kod),p);
+    const g=(document.getElementById('lv-k').value||'').trim().toLowerCase().replace(/\s+/g,''),p=document.getElementById('lv-p').value;
+    if(/^\d{6}$/.test(g)) girisYap(VELI_EPOSTA(g),p);
+    else if(AD_KURALI.test(g)&&/[a-z]/.test(g)) girisYap(g+'@veli.example.com',p);
+    else{ui.loginErr='Veli kodu 6 haneli olmalı ya da kendi belirlediğiniz kullanıcı adını yazın.';render();}
   }else{
     girisYap(document.getElementById('lt-e').value.trim(),document.getElementById('lt-p').value);
   }
@@ -1631,6 +1667,7 @@ document.addEventListener('click',async e=>{
     case 'cders': ui.chartDers=el.dataset.v;break;
 
     /* --- notlar --- */
+    case 'hesap': ui.modal={type:'hesap'};break;
     case 'thread': ekTemizle();ui.modal={type:'thread',sid:el.dataset.s,ref:el.dataset.r};break;
     case 'sesbas': try{await sesBaslat();}catch(err){toast(hataMetni(err));}return;
     case 'sesdur': if(ui.kayit){try{ui.kayit.rec.stop();}catch(_){}}return;
