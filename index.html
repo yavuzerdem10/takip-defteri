@@ -7,6 +7,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Takip Defteri">
 <meta name="robots" content="noindex">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="ikon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>Takip Defteri</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -235,6 +238,28 @@ details summary{cursor:pointer;font-weight:700}
 .flag.warn{background:var(--warn-soft);border-left-color:var(--warn)}
 .flag .who{font-weight:700}
 .card.alert{border-top:3px solid var(--crit)}
+.pushkart h3{margin:0 0 4px}.pushkart{margin-bottom:12px}.notifs+.pushkart{margin-top:12px}
+.modal:has(.karneler){max-width:760px}
+.karne{border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px;background:var(--paper)}
+.karneler{display:flex;flex-direction:column;gap:16px}
+.karne-h{display:flex;gap:12px;align-items:center}.karne-h .logo svg{width:36px;height:36px}.karne-h h2{margin:0;font-size:1.15rem}.karne-h p{margin:2px 0 0}
+.karne h3{font-size:.95rem;margin:4px 0 6px;border-bottom:1px solid var(--line);padding-bottom:3px}
+.karne-ozet{background:var(--accent-soft);border-radius:8px;padding:8px 10px;margin:0;font-weight:600}
+.kt{width:100%;border-collapse:collapse}.kt td{padding:5px 4px;border-bottom:1px solid var(--line);vertical-align:top}.kt td.n{text-align:right;white-space:nowrap}
+.karne-alt{margin:4px 0 0}
+.kt td.n .pill{white-space:normal;display:inline-block;text-align:center;max-width:150px}
+@media (max-width:520px){.karne{padding:12px}.karne-h .logo{display:none}.kt tr{display:flex;flex-wrap:wrap;justify-content:space-between;border-bottom:1px solid var(--line)}.kt td{border:0}.kt td:first-child{flex:1 1 100%}}
+@media print{
+  body.karne-baski .app>*:not(.modal-bg){display:none!important}
+  body.karne-baski .modal-bg{position:static!important;background:none!important;padding:0!important;display:block!important}
+  body.karne-baski .modal{max-width:none!important;max-height:none!important;overflow:visible!important;border:0!important;box-shadow:none!important;padding:0!important}
+  body.karne-baski .noprint{display:none!important}
+  body.karne-baski{background:#fff!important}
+  body.karne-baski .karne{border:0;padding:0;break-after:page;page-break-after:always;color:#000}
+  body.karne-baski .karne:last-child{break-after:auto;page-break-after:auto}
+  body.karne-baski .karne-ozet{background:#eef3f8;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body.karne-baski .bar i,body.karne-baski .pill{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
 .upsel{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px;padding:6px 10px;background:var(--good-soft,#e8f5ee);border-radius:8px;font-size:.9rem}
 .hedefrow{display:flex;gap:8px;align-items:center}.hedefrow input{max-width:120px}.hedefrow select{max-width:140px}
 .mdetay{display:flex;flex-direction:column;gap:4px;margin-top:6px;padding:8px 10px;background:var(--bg,#f6f7f9);border-radius:8px;border:1px solid var(--line)}
@@ -786,6 +811,35 @@ function feedHtml(viewer){
   return `<ul class="feed">${h}</ul>`;
 }
 
+/* ---------- haftalık karne ---------- */
+const KARNE_DURUM={onay:['Tamamlandı','good'],veli_tam:['Veli: tamamlandı · kontrol bekliyor','neutral'],veli_eksik:['Eksik yapıldı','warn'],eksik:['Öğretmen: eksik','warn'],veli_yok:['Yapılmadı','crit'],gecikti:['İşaretlenmedi','crit'],bekliyor:['Süresi devam ediyor','neutral']};
+function karneHtml(sid,ws){
+  const s=stu(sid),we=addDays(ws,6),to=we>TODAY?TODAY:we;
+  const gor=assigned(sid).filter(t=>t.due>=ws&&t.due<=we).sort((a,b)=>a.due.localeCompare(b.due));
+  const sayac={};gor.forEach(t=>{const k=statusOf(t,sid);sayac[k]=(sayac[k]||0)+1;});
+  const tamam=(sayac.onay||0)+(sayac.veli_tam||0);
+  let gun=0,kayit=0;for(let d=ws;d<=to;d=addDays(d,1)){if(countable(sid,d)){gun++;if(S.logs.some(l=>l.sid===sid&&l.date===d))kayit++;}}
+  const ls=logSum(sid,ws,to),hd=targetTotal(),os=odevSum(sid,ws,to);
+  const ex=examsSorted().filter(e=>e.date>=ws&&e.date<=we&&e.results[sid]);
+  const ozet=[];
+  if(gun) ozet.push(`Kayıt girilen gün: ${kayit} / ${gun}`);
+  ozet.push(`Soru: ${ls.soruT}${hd?` / ${hd}`:''}`);
+  ozet.push(`Okuma: ${ls.sayfa}${+S.settings.okumaHedef?` / ${+S.settings.okumaHedef}`:''} sayfa`);
+  if(gor.length) ozet.push(`Tamamlanan görev: ${tamam} / ${gor.length}`);
+  const satir=(l,v,h,u)=>barRow(l,v,h,u);
+  return `<article class="karne">
+   <header class="karne-h"><div><span class="logo">${LOGO}</span></div><div><h2>Haftalık karne · ${esc(s.name)}</h2><p class="small muted">${esc(S.settings.className)} · ${fmtG(ws)} – ${fmtG(we)}${we>TODAY?' (hafta sürüyor)':''}</p></div></header>
+   <p class="karne-ozet">${ozet.join(' · ')}</p>
+   <section><h3>Görevler</h3>${gor.length?`<table class="kt"><tbody>${gor.map(t=>{const st=statusOf(t,sid),m=markOf(t,sid)||{},kd=KARNE_DURUM[st]||[st,'neutral'];
+     return `<tr><td>${esc(t.title)}<div class="small muted">${TUR[t.type]} · ${esc(t.ders)} · son gün ${fmt(t.due)}</div></td><td class="n">${t.hedef&&m.yapilan!=null?`${m.yapilan}/${t.hedef} ${BIRIM[t.birim]}`:''}</td><td class="n"><span class="pill ${kd[1]}">${kd[0]}</span></td></tr>`;}).join('')}</tbody></table>`:'<p class="small muted">Bu hafta son günü olan görev yok.</p>'}</section>
+   <section><h3>Soru çözümü</h3>${SORU_DERSLER.map(d=>satir(KISA[d]||d,ls.soru[d]||0,+S.settings.targets[d]||0)).join('')}${satir('Toplam',ls.soruT,hd)}</section>
+   <section><h3>Kitap okuma</h3>${satir('Sayfa',ls.sayfa,+S.settings.okumaHedef||0)}${ls.kitaplar.size?`<p class="small">Okunan: ${[...ls.kitaplar].map(esc).join(', ')}</p>`:''}</section>
+   <section><h3>Okul ödevleri</h3>${os.top?`<p class="small">${os.top} ödev bildirildi: <b>${os.tam}</b> tamam, <b>${os.eksik}</b> eksik, <b>${os.yok}</b> yapılmadı · tamamlama ${pct(os.pct)}</p>`:'<p class="small muted">Bu hafta okul ödevi bildirilmedi.</p>'}</section>
+   ${ex.length?`<section><h3>Deneme</h3>${ex.map(e=>`<p class="small"><b>${esc(e.name)}</b> (${fmt(e.date)}): ${e.dersler.map(dd=>{const x=(e.results[sid]||{})[dd.ad];return x?`${esc(KISA[dd.ad]||dd.ad)} ${nf(netOf(x.d,x.y))}`:'';}).filter(Boolean).join(' · ')} · <b>toplam net ${nf(examNet(e,sid))}</b></p>`).join('')}</section>`:''}
+   <p class="small muted karne-alt">Soru, okuma ve ödev bilgileri velinin günlük kaydına dayanır; görev durumları öğretmen kontrolünü gösterir. Takip Defteri · ${fmtG(TODAY)}</p>
+  </article>`;
+}
+
 /* ---------- gelişim bölümleri ---------- */
 function devSections(sid,teacher){
   const ex=examsSorted(),opts=['Toplam'].concat((S.settings.examTemplate||[]).map(d=>d.ad)),cd=ui.chartDers;
@@ -808,6 +862,7 @@ function devSections(sid,teacher){
   const odevTbl=os.top?`<div class="tw"><table><thead><tr><th>Ders</th><th class="n">Ödev</th><th class="n">✓ Tamam</th><th class="n">½ Eksik</th><th class="n">✕ Yapmadı</th><th class="n">Tamamlama</th></tr></thead><tbody>${okulDersleri().filter(d=>os.ders[d]).map(d=>{const x=os.ders[d];return `<tr><td>${esc(d)}</td><td class="n">${x.top}</td><td class="n">${x.tam}</td><td class="n">${x.eksik}</td><td class="n ${x.yok?'down':''}">${x.yok}</td><td class="n"><strong>${pct(x.tam/x.top)}</strong></td></tr>`;}).join('')}</tbody><tfoot><tr><td>Toplam</td><td class="n">${os.top}</td><td class="n">${os.tam}</td><td class="n">${os.eksik}</td><td class="n">${os.yok}</td><td class="n">${pct(os.pct)}</td></tr></tfoot></table></div>`:'<p class="empty">Son iki haftada okul ödevi bildirilmedi.</p>';
   const exFiles=last?filesFor('exam:'+last.id,sid):[];
   return `
+  <section class="card"><div class="card-h"><h2>Haftalık karne</h2><button class="btn sm pri" data-a="karne" data-s="${sid}">Karneyi aç</button></div><p class="small muted">Haftanın görev, soru, okuma, ödev ve deneme özeti. Yazdırılabilir ya da PDF olarak kaydedilebilir.</p></section>
   <section class="card"><div class="card-h"><h2>Okul ödevleri · son 2 hafta</h2><span class="small muted">Veli bildirimine dayanır · ${os.gun} gün ödev bildirildi</span></div>${odevTbl}</section>
   <section class="card"><div class="card-h"><h2>Deneme karnesi${last?': '+esc(last.name):''} ${isNew&&!teacher?'<span class="pill good">Yeni</span>':''}</h2>${last?`<span class="small muted">${fmt(last.date)} · net = D − Y/${S.settings.netRule||'∞'} · ${noteBtn(sid,'exam:'+last.id,'Bu deneme hakkında not')}</span>`:''}</div>${dersTbl}${exFiles.length?fileChips(exFiles):''}</section>
   <section class="card"><div class="card-h"><h2>Deneme gelişimi</h2><div class="chips">${opts.map(o=>`<button class="chipbtn ${o===cd?'on':''}" data-a="cders" data-v="${esc(o)}">${esc(KISA[o]||o)}</button>`).join('')}</div></div>
@@ -841,7 +896,7 @@ function tShell(body){
   const pend=pendingList().length,openN=threads().filter(t=>t.open).length;
   const nav=[['pano','Pano'],['gorevler','Görevler'],['kontrol','Kontrol',pend],['notlar','Notlar',openN],['denemeler','Denemeler'],['dosyalar','Dosyalar'],['ogrenciler','Öğrenciler'],['grup','Enler ve akış'],['ayarlar','Ayarlar']];
   return `<header class="top"><div class="brand"><span class="logo">${LOGO}</span><div><strong>Takip Defteri</strong><small>${esc(S.settings.className)}</small></div></div>
-   <div class="top-r"><span class="role">${esc(ME.ad)}</span><button class="btn ghost sm" data-a="refresh" title="Verileri yenile">Yenile</button><button class="iconbtn" data-a="bell" aria-label="Bildirimler">${BELL}</button><button class="btn ghost sm" data-a="logout">Çıkış</button></div></header>
+   <div class="top-r"><span class="role">${esc(ME.ad)}</span><button class="btn ghost sm" data-a="refresh" title="Verileri yenile">Yenile</button><button class="iconbtn" data-a="bell" aria-label="Bildirimler">${BELL}${(()=>{const u=S.notifs.filter(n=>!n.read).length;return u?`<span class="badge">${u}</span>`:'';})()}</button><button class="btn ghost sm" data-a="logout">Çıkış</button></div></header>
    <div class="tbody"><nav class="side" aria-label="Öğretmen menüsü">${nav.map(([v,l,b])=>`<button class="nav ${ui.view===v?'on':''}" data-a="go" data-v="${v}">${l}${b?`<span class="badge">${b}</span>`:''}</button>`).join('')}</nav>
    <main class="main">${body}</main></div>`;
 }
@@ -1000,7 +1055,7 @@ function vOgrenciler(){
     const exM=ex.filter(e=>e.results[s.id]),ln=exM.length?examNet(exM[exM.length-1],s.id):null,pn=exM.length>1?examNet(exM[exM.length-2],s.id):null,dl=ln!=null&&pn!=null?ln-pn:null;
     return `<tr class="click" data-a="student" data-s="${s.id}"><td><strong>${esc(s.name)}</strong>${s.askida?' <span class="pill crit">askıda</span>':mi===2?' <span class="pill warn">2 gün kayıtsız</span>':''}</td><td class="muted">${esc(s.parent)}</td><td class="n">${pct(ts.pct)}</td><td class="n">${pct(ts.ontimePct)}</td><td class="n">${nInt(l.soruT)}</td><td class="n">${l.sayfa}</td><td class="n">${streak(s.id)} gün</td><td class="n"><strong>${nf(ln)}</strong></td><td class="n ${dl==null?'':deltaCls(dl)}">${signed(dl)}</td></tr>`;
   }).join('');
-  return `<div class="head"><div><h1>Öğrenciler</h1><p>Dönem başı ${fmt(S.settings.donemBas)}. Satıra tıklayınca gelişim sayfası ve dönem raporu açılır.</p></div><button class="btn" data-a="newstudent">+ Öğrenci ekle</button></div>
+  return `<div class="head"><div><h1>Öğrenciler</h1><p>Dönem başı ${fmt(S.settings.donemBas)}. Satıra tıklayınca gelişim sayfası ve dönem raporu açılır.</p></div><div class="chips"><button class="btn" data-a="karne" data-s="all">Haftalık karneler (tümü)</button><button class="btn" data-a="newstudent">+ Öğrenci ekle</button></div></div>
   <section class="card"><div class="tw"><table><thead><tr><th>Öğrenci</th><th>Veli</th><th class="n">Görev (dönem)</th><th class="n">Zamanında</th><th class="n">Soru (hafta)</th><th class="n">Sayfa (hafta)</th><th class="n">Seri</th><th class="n">Son net</th><th class="n">Değişim</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
 }
 function reportText(sid){
@@ -1081,6 +1136,7 @@ function vGrup(){
 function vAyarlar(){
   const st=S.settings;
   return `<div class="head"><div><h1>Ayarlar</h1><p>Grup bilgileri, hatırlatmalar, hedefler ve izinler.</p></div></div>
+  ${pushKarti()?`<section class="card">${pushKarti()}</section>`:''}
   <div class="grid2">
   <section class="card"><h2>Grup</h2>
    <div class="field"><label for="st-cn">Grup / sınıf adı</label><input id="st-cn" type="text" value="${esc(st.className)}" data-a="set" data-k="className"></div>
@@ -1156,12 +1212,18 @@ function logCard(sid,ro){
   </section>`;
 }
 function lastBook(sid){const ls=S.logs.filter(l=>l.sid===sid&&l.kitap).sort((a,b)=>b.date.localeCompare(a.date));return ls[0]?ls[0].kitap:'';}
+function pushBanner(){
+  if(!['kapali','ios'].includes(ui.push)) return '';
+  try{const t=+localStorage.getItem('td_push_sonra')||0;if(Date.now()-t<7*864e5) return '';}catch(_){}
+  return pushKarti('banner');
+}
 function vPBugun(){
   const sid=ui.sid,s=stu(sid),mi=missing(sid),ro=suspended(sid),ws=weekStart(TODAY);
   let banner='';
   if(ro) banner=`<div class="banner crit"><strong>Hesap askıya alındı</strong><span class="small">İş günlerinde üst üste kayıt girilmedi. Bilgileri görebilirsiniz ama yeni işaret ya da kayıt giremezsiniz. Öğretmeniniz hesabı yeniden açtığında size yeni bir şifre iletilecek.</span></div>`;
   else if(mi===2) banner=`<div class="banner warn"><strong>2 iş günüdür kayıt yok</strong><span class="small">Bugün kayıt girilmezse hesap yarın askıya alınır. Hastalık ya da izin varsa durum bildirin; o günler sayılmaz.</span><div><button class="btn sm" data-a="durum">Durum bildir</button></div></div>`;
   else if(mi===1) banner=`<div class="banner info small">Dün için kayıt yok. “Dün” sekmesinden ekleyebilirsiniz.</div>`;
+  if(!ro) banner+=pushBanner();
   const open=parentOpenToday(sid).sort((a,b)=>a.due.localeCompare(b.due));
   const marked=assigned(sid).filter(t=>statusOf(t,sid).startsWith('veli_')).sort((a,b)=>markOf(b,sid).at.localeCompare(markOf(a,sid).at));
   const done=assigned(sid).filter(t=>statusOf(t,sid)==='onay'&&t.due>=addDays(TODAY,-14));
@@ -1251,6 +1313,11 @@ function vModal(){
     inner=`<h2>Şablonu gönder: ${esc(tp.name)}</h2><ul>${tp.items.map(it=>`<li>${TUR[it.type]}: ${esc(it.title)} <span class="muted">· verilişten ${it.off} gün sonra</span></li>`).join('')}</ul>
     <div class="field"><label for="tp-start">Veriliş tarihi</label><input id="tp-start" type="date" value="${TODAY}"></div>${targetFields()}<p class="err" id="nt-err"></p>
     <div class="actions"><button class="btn" data-a="closemodal">Vazgeç</button><button class="btn pri" data-a="dosendtpl">${tp.items.length} görevi gönder</button></div>`;
+  }else if(m.type==='karne'){
+    const ws=m.ws,ids=m.sid==='all'?S.students.map(x=>x.id):[m.sid],ileri=addDays(ws,7)<=weekStart(TODAY);
+    inner=`<div class="card-h noprint"><h2>Haftalık karne</h2><div class="chips"><button class="btn sm" data-a="karnehafta" data-v="-7" aria-label="Önceki hafta">‹ Önceki</button><button class="btn sm" data-a="karnehafta" data-v="7" ${ileri?'':'disabled'} aria-label="Sonraki hafta">Sonraki ›</button></div></div>
+    <div class="karneler">${ids.map(id=>karneHtml(id,ws)).join('')}</div>
+    <div class="actions noprint"><button class="btn" data-a="closemodal">Kapat</button><button class="btn pri" data-a="karneyazdir">Yazdır / PDF kaydet</button></div>`;
   }else if(m.type==='pmark'){
     const [tid]=m.key.split('|'),t=S.tasks.find(x=>x.id===tid),st=m.st,yok=st==='veli_yok';
     const bas={veli_tam:'✓ Tamamlandı',veli_eksik:'½ Eksik yapıldı',veli_yok:'✕ Yapılmadı'}[st];
@@ -1292,8 +1359,8 @@ Veli kodu: ${esc(m.kod||'')}
   }else if(m.type==='bell'){
     let items='';
     if(ui.role==='t'){
-      items=teacherDigest().map(d=>`<div class="notif"><strong>${d.title}</strong><span>${esc(d.text)}</span><small>Her gün ${d.time} · ${NOWHM>=d.time?'bugün gönderildi':'bugün gönderilecek'}</small></div>`).join('');
-      items+=`<p class="small muted">Velilerin her işareti için ayrı bildirim gelmez; gün içinde iki özet gelir. Kırmızı bayraklar Pano’nun en üstündedir.</p>`;
+      items=[...S.notifs].sort((a,b)=>b.at.localeCompare(a.at)).map(n=>`<button class="notif ${n.read?'':'unread'}" data-a="ngo" data-go="${n.go}" data-id="${n.id}"><span>${esc(n.text)}</span><small>${dayLabel(n.at)}</small></button>`).join('');
+      items+=`<p class="small muted">Velilerin her işareti için ayrı bildirim gelmez; her akşam ${esc(S.settings.ozet||'21:30')}’da tek bir özet gelir. Kırmızı bayraklar Pano’nun en üstündedir.</p>`;
     }else{
       const sid=ui.sid,ev=eveningReminder(sid),mi=missing(sid);
       if(ev) items+=`<button class="notif unread" data-a="ngo" data-go="bugun"><strong>Akşam hatırlatması</strong><span>${esc(ev)}</span><small>Bugün ${S.settings.hatirlatma} · ${NOWHM>=S.settings.hatirlatma?'gönderildi':'gönderilecek'}</small></button>`;
@@ -1301,7 +1368,7 @@ Veli kodu: ${esc(m.kod||'')}
       items+=S.notifs.filter(n=>n.sid===sid).sort((a,b)=>b.at.localeCompare(a.at)).map(n=>`<button class="notif ${n.read?'':'unread'}" data-a="ngo" data-go="${n.go}" data-id="${n.id}"><span>${esc(n.text)}</span><small>${dayLabel(n.at)}</small></button>`).join('');
       if(!items) items='<p class="empty">Bildirim yok.</p>';
     }
-    inner=`<div class="card-h"><h2>Bildirimler</h2><button class="btn sm ghost" data-a="closemodal">Kapat</button></div><p class="small muted">Bildirimler şimdilik uygulamanın içinde görünür; telefona anlık bildirim bir sonraki adımda eklenecek.</p><div class="notifs">${items}</div>`;
+    inner=`<div class="card-h"><h2>Bildirimler</h2><button class="btn sm ghost" data-a="closemodal">Kapat</button></div>${pushKarti()}<div class="notifs">${items}</div>`;
   }else if(m.type==='student'){
     inner=`<h2>Öğrenci ekle</h2>
     <div class="field"><label for="ns-name">Öğrenci adı</label><input id="ns-name" type="text"></div>
@@ -1338,7 +1405,10 @@ async function oturumAc(){
     if(!pr[0]){await sb.auth.signOut();throw new Error('Bu hesap için uygulama profili bulunamadı.');}
     ME=pr[0];ui.role=ME.rol==='ogretmen'?'t':'v';
     await yukle();
+    await pushDurumu();
     ui.loading=false;ui.loginErr='';render();
+    const ac=new URLSearchParams(location.search).get('ac');
+    if(ac){history.replaceState(null,'',location.pathname);hedefeGit(ac);}
   }catch(e){console.error(e);ui.loading=false;ui.role=null;ui.loginErr=hataMetni(e);render();}
 }
 async function girisYap(email,sifre){
@@ -1387,12 +1457,19 @@ document.addEventListener('click',async e=>{
     case 'tplitem': ui.modal={type:'tplitem',id:el.dataset.id};break;
     case 'sendtpl': ui.modal={type:'sendtpl',id:el.dataset.id};break;
     case 'bell': ui.modal={type:'bell'};break;
+    case 'karne': ui.modal={type:'karne',sid:el.dataset.s,ws:weekStart(TODAY)};break;
+    case 'karnehafta': {const w=addDays(ui.modal.ws,+el.dataset.v);if(w<=weekStart(TODAY))ui.modal.ws=w;break;}
+    case 'karneyazdir': document.body.classList.add('karne-baski');setTimeout(()=>{window.print();setTimeout(()=>document.body.classList.remove('karne-baski'),500);},50);return;
+    case 'pushac': try{el.disabled=true;await pushAc();toast('Bildirimler açıldı');}catch(e){console.error(e);toast(e.message||'Bildirim açılamadı');} render();return;
+    case 'pushkapat': try{await pushKapat();toast('Bu cihazda bildirimler kapatıldı');}catch(e){toast(hataMetni(e));} render();return;
+    case 'pushdeneme': try{el.disabled=true;await bildirimFonk('deneme');toast('Deneme bildirimi gönderildi');}catch(e){toast(e.message||'Gönderilemedi');} el.disabled=false;return;
+    case 'pushsonra': try{localStorage.setItem('td_push_sonra',String(Date.now()));}catch(_){} render();return;
     case 'closemodal':
-      if(ui.modal&&ui.modal.type==='bell'&&ui.role==='v'&&S.notifs.some(n=>!n.read)){S.notifs.forEach(n=>n.read=true);sb.from('bildirimler').update({okundu:true}).eq('okundu',false).then(()=>{});}
+      if(ui.modal&&ui.modal.type==='bell'&&S.notifs.some(n=>!n.read)){S.notifs.forEach(n=>n.read=true);sb.from('bildirimler').update({okundu:true}).eq('okundu',false).then(()=>{});}
       ui.modal=null;break;
     case 'ngo':{
       S.notifs.forEach(n=>n.read=true);sb.from('bildirimler').update({okundu:true}).eq('okundu',false).then(()=>{});
-      goTop(()=>{ui.pview=el.dataset.go||'bugun';});if(ui.pview==='grup')panoYukle();return;}
+      return hedefeGit(el.dataset.go);}
     case 'refresh': return yaz(async()=>{},'Güncellendi');
 
     /* --- öğretmen: işaretler --- */
@@ -1611,6 +1688,67 @@ document.addEventListener('visibilitychange',()=>{
 });
 
 /* ---------- başlangıç ---------- */
+/* ---------- telefona bildirim (Web Push) ---------- */
+const PUSH_DESTEK=('serviceWorker' in navigator)&&('PushManager' in window)&&('Notification' in window)&&(location.protocol==='https:'||location.hostname==='localhost');
+const IOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+const STANDALONE=(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true;
+let swKayit=null;
+function b64uBytes(s){s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';return Uint8Array.from(atob(s),c=>c.charCodeAt(0));}
+async function bildirimFonk(islem){
+  const {data,error}=await sb.functions.invoke('bildirim-gonder',{body:{islem}});
+  if(error){let m=error.message;try{const b=await error.context.json();m=b.hata||m;}catch(_){}throw new Error(m);}
+  if(data&&data.hata) throw new Error(data.hata);
+  return data;
+}
+async function pushDurumu(){
+  if(!PUSH_DESTEK){ui.push=IOS&&!STANDALONE?'ios':'yok';return;}
+  try{
+    swKayit=swKayit||await navigator.serviceWorker.register('sw.js');
+    if(Notification.permission==='denied'){ui.push='engelli';return;}
+    const ab=await swKayit.pushManager.getSubscription();
+    if(ab){ui.push='acik';
+      /* aynı cihazda başka kullanıcı girmişse aboneliği bu kullanıcıya taşı */
+      const j=ab.toJSON();sb.rpc('push_abone_ol',{p_endpoint:j.endpoint,p_p256dh:j.keys.p256dh,p_auth:j.keys.auth,p_cihaz:cihazAdi()}).then(()=>{});
+    }else ui.push='kapali';
+  }catch(e){console.error(e);ui.push='yok';}
+}
+function cihazAdi(){const u=navigator.userAgent;return (/Android/.test(u)?'Android':IOS?'iPhone/iPad':/Windows/.test(u)?'Windows':/Mac/.test(u)?'Mac':'Cihaz')+' · '+(/Edg\//.test(u)?'Edge':/Chrome\//.test(u)?'Chrome':/Firefox\//.test(u)?'Firefox':/Safari\//.test(u)?'Safari':'Tarayıcı');}
+async function pushAc(){
+  const izin=await Notification.requestPermission();
+  if(izin!=='granted'){ui.push=izin==='denied'?'engelli':'kapali';throw new Error('Bildirim izni verilmedi.');}
+  swKayit=swKayit||await navigator.serviceWorker.register('sw.js');
+  await navigator.serviceWorker.ready;
+  const {anahtar}=await bildirimFonk('anahtar');
+  let ab=await swKayit.pushManager.getSubscription();
+  if(!ab) ab=await swKayit.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64uBytes(anahtar)});
+  const j=ab.toJSON();
+  await q(sb.rpc('push_abone_ol',{p_endpoint:j.endpoint,p_p256dh:j.keys.p256dh,p_auth:j.keys.auth,p_cihaz:cihazAdi()}));
+  ui.push='acik';
+}
+async function pushKapat(){
+  const ab=swKayit&&await swKayit.pushManager.getSubscription();
+  if(ab){await q(sb.rpc('push_abonelik_sil',{p_endpoint:ab.endpoint}));await ab.unsubscribe();}
+  ui.push='kapali';
+}
+function pushKarti(yer){
+  const p=ui.push,veli=ui.role==='v';
+  const ne=veli?'akşam hatırlatması, yeni görev, deneme sonucu ve öğretmen notları':'her akşamki günlük özet';
+  let ic='';
+  if(p==='acik') ic=`<p class="small"><strong>✓ Bu cihazda bildirimler açık.</strong> ${ne[0].toUpperCase()+ne.slice(1)} telefonunuza gelir.</p><div class="row-btns"><button class="btn sm" data-a="pushdeneme">Deneme bildirimi gönder</button><button class="btn sm ghost" data-a="pushkapat">Bu cihazda kapat</button></div>`;
+  else if(p==='kapali') ic=`<p class="small">Uygulama kapalıyken de ${ne} telefonunuza gelsin.</p><div class="row-btns"><button class="btn sm pri" data-a="pushac">Bildirimleri aç</button>${yer==='banner'?'<button class="btn sm ghost" data-a="pushsonra">Şimdi değil</button>':''}</div>`;
+  else if(p==='ios') ic=`<p class="small"><strong>iPhone’da bildirim için önce uygulamayı ana ekrana ekleyin:</strong> Safari’de alttaki <b>Paylaş</b> düğmesine (kare ve yukarı ok) dokunun → <b>Ana Ekrana Ekle</b>. Sonra Takip Defteri’ni ana ekrandaki simgeden açıp buradan “Bildirimleri aç”a dokunun. (iOS 16.4 ve üstü gerekir.)</p>`;
+  else if(p==='engelli') ic=`<p class="small">Bildirimler bu tarayıcıda engellenmiş. Adres çubuğundaki kilit simgesine dokunup <b>Bildirimler → İzin ver</b> seçin, sonra sayfayı yenileyin.</p>`;
+  else if(p==='yok') ic=`<p class="small muted">Bu tarayıcı telefona bildirim göndermeyi desteklemiyor. Android’de Chrome, iPhone’da ana ekrana eklenmiş uygulama kullanın.</p>`;
+  else return '';
+  return `<div class="pushkart${yer==='banner'?' banner info':''}">${yer==='banner'?'':'<h3>Telefona bildirim</h3>'}${ic}</div>`;
+}
+function hedefeGit(h){
+  h=h||'bugun';
+  if(ui.role==='v'){goTop(()=>{ui.pview=['bugun','gelisim','grup','dosyalar','notlar'].includes(h)?h:'bugun';ui.modal=null;});if(ui.pview==='grup')panoYukle();}
+  else goTop(()=>{ui.view=['pano','kontrol','gorevler','ogrenciler','denemeler','dosyalar','notlar','ayarlar'].includes(h)?h:'pano';ui.profile=null;ui.modal=null;});
+}
+if('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message',e=>{if(e.data&&e.data.tur==='bildirim-ac'&&ui.role){yukle().then(()=>hedefeGit(e.data.hedef)).catch(()=>{});}});
+
 (async function basla(){
   if(!window.supabase){app.innerHTML='<div class="login"><div class="login-box"><section class="card"><h2>Bağlantı kurulamadı</h2><p class="muted">İnternet bağlantınızı kontrol edip sayfayı yenileyin.</p></section></div></div>';return;}
   sb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true}});
