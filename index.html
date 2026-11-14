@@ -235,6 +235,7 @@ details summary{cursor:pointer;font-weight:700}
 .flag.warn{background:var(--warn-soft);border-left-color:var(--warn)}
 .flag .who{font-weight:700}
 .card.alert{border-top:3px solid var(--crit)}
+.upsel{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px;padding:6px 10px;background:var(--good-soft,#e8f5ee);border-radius:8px;font-size:.9rem}
 .hedefrow{display:flex;gap:8px;align-items:center}.hedefrow input{max-width:120px}.hedefrow select{max-width:140px}
 .mdetay{display:flex;flex-direction:column;gap:4px;margin-top:6px;padding:8px 10px;background:var(--bg,#f6f7f9);border-radius:8px;border:1px solid var(--line)}
 .md-mik{display:flex;align-items:center;gap:8px}.mbar{flex:1;max-width:160px;height:7px;background:var(--line);border-radius:4px;overflow:hidden}.mbar i{display:block;height:100%;background:var(--good)}
@@ -1046,13 +1047,17 @@ function vProfile(sid){
    <div class="field"><label for="ev-in">Öğretmen değerlendirmesi</label><textarea id="ev-in" data-a="eval" data-s="${sid}" placeholder="Güçlü yönler, gelişime açık alanlar, ev için öneriler…">${esc(S.evals[sid]||'')}</textarea></div>
   </section>`;
 }
+function secilenHtml(){
+  const fs=ui.upFiles||[];if(!fs.length) return '';
+  return `<div class="upsel"><span>✓ Seçilen: <strong>${fs.map(f=>esc(f.name)+' ('+mb(f.size)+')').join(', ')}</strong></span><button type="button" class="btn sm ghost" data-a="upclear">Kaldır</button></div>`;
+}
 function vDosyalar(){
   const tasks=[...S.tasks].sort((a,b)=>b.given.localeCompare(a.given)).slice(0,15),exams=examsSorted().reverse();
   const fs=[...S.files].sort((a,b)=>b.at.localeCompare(a.at));
   const refTxt=r=>!r?'—':topic(r);
   return `<div class="head"><div><h1>Dosyalar</h1><p>Deneme sonuçları, testler, fasiküller ve diğer PDF'ler. Her dosyanın kime görüneceğini siz seçersiniz.</p></div></div>
   <section class="card"><h2>PDF yükle</h2>
-   <div class="dropzone"><label class="lbl" for="up-file">Dosya: PDF ya da sayfa fotoğrafları (JPG/PNG, birden çok seçilebilir). Büyük dosyalar yüklemeden önce kendiliğinden küçültülür.</label><input id="up-file" type="file" multiple accept="application/pdf,.pdf,image/jpeg,image/png,.jpg,.jpeg,.png"></div>
+   <div class="dropzone"><label class="lbl" for="up-file">Dosya: PDF ya da sayfa fotoğrafları (JPG/PNG, birden çok seçilebilir). Büyük dosyalar yüklemeden önce kendiliğinden küçültülür.</label><input id="up-file" type="file" multiple accept="application/pdf,.pdf,image/jpeg,image/png,.jpg,.jpeg,.png"><div id="up-sel">${secilenHtml()}</div></div>
    <div class="row"><div class="field"><label for="up-title">Başlık</label><input id="up-title" type="text" placeholder="Örn. Deneme 5 cevap anahtarı"></div>
     <div class="field"><label for="up-tur">Tür</label><select id="up-tur">${Object.entries(DOSYA_TUR).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select></div></div>
    <div class="field"><label for="up-ref">Bağlı olduğu yer (isteğe bağlı)</label><select id="up-ref"><option value="">Bağımsız dosya</option>
@@ -1357,8 +1362,10 @@ document.addEventListener('submit',e=>{
 /* ---------- olaylar ---------- */
 const evTimers={};
 document.addEventListener('click',async e=>{
+  if(e.target&&e.target.id==='up-file'){ui.upPick=Date.now();return;}
   const el=e.target.closest('[data-a]');if(!el) return;
   const a=el.dataset.a;
+  if(a==='upclear'){ui.upFiles=null;const i_=document.getElementById('up-file');if(i_)i_.value='';const s_=document.getElementById('up-sel');if(s_)s_.innerHTML='';return;}
   if(a==='bgclose'){if(e.target===el){ui.modal=null;render();}return;}
   if(['upmode','tgmode','exin','exmeta','exsoru','qin','qbook','set','setb','target','eval','vis'].includes(a)) return;
   if(!['deltask','delexam','deltpl','delfile','velihesap','reactivate'].includes(a)) ui.confirmDel=null;
@@ -1487,7 +1494,7 @@ document.addEventListener('click',async e=>{
     case 'delfile':{const id=el.dataset.id;if(ui.confirmDel!==id){ui.confirmDel=id;break;}ui.confirmDel=null;const f=S.files.find(x=>x.id===id);
       return yaz(async()=>{await sb.storage.from('dosyalar').remove([f.path]);await q(sb.from('dosyalar').delete().eq('id',id));},'Dosya silindi');}
     case 'upload':{
-      const inp=document.getElementById('up-file'),err=document.getElementById('up-err'),files=[...(inp.files||[])];
+      const inp=document.getElementById('up-file'),err=document.getElementById('up-err'),files=(ui.upFiles&&ui.upFiles.length)?ui.upFiles:[...(inp.files||[])];
       const title=document.getElementById('up-title').value.trim(),mode=(document.querySelector('input[name="up-k"]:checked')||{}).value;
       const sel=[...document.querySelectorAll('#up-checks input:checked')].map(i=>i.value);
       if(!files.length){err.textContent='Önce bir PDF ya da fotoğraf seçin.';return;}
@@ -1515,7 +1522,7 @@ document.addEventListener('click',async e=>{
             konu_turu:ref?(ref.startsWith('task:')?'gorev':'deneme'):null,konu_id:ref?ref.split(':')[1]:null};
           const [d]=await q(sb.from('dosyalar').insert(row).select('id'));
           if(kime==='secili') await q(sb.from('dosya_alicilari').insert(sel.map(o=>({dosya_id:d.id,ogrenci_id:o}))));
-          ui.upRef='';return 'ok';
+          ui.upRef='';ui.upFiles=null;return 'ok';
         },kime==='ogretmen'?'Yüklendi (yalnızca sizde)':'Yüklendi; velilere bildirim gitti',e=>{const er=document.getElementById('up-err');if(er)er.textContent='Yüklenemedi ('+(adim==='depo'?'dosya deposu':'kayıt')+'): '+((e&&(e.message||e.error))||e)+' — Bu mesajın ekran görüntüsünü Yavuz Bey’e gönderin.';});
         btn.disabled=false;
       })();
@@ -1576,7 +1583,9 @@ document.addEventListener('input',e=>{
   }
 });
 document.addEventListener('change',e=>{
-  const el=e.target,a=el.dataset&&el.dataset.a;if(!a)return;
+  const el=e.target;
+  if(el.id==='up-file'){ui.upPick=0;if(el.files&&el.files.length){ui.upFiles=[...el.files];const s_=document.getElementById('up-sel');if(s_)s_.innerHTML=secilenHtml();const er=document.getElementById('up-err');if(er)er.textContent='';}return;}
+  const a=el.dataset&&el.dataset.a;if(!a)return;
   if(a==='tgmode'){document.getElementById('nt-checks').hidden=el.value!=='sel';}
   else if(a==='upmode'){document.getElementById('up-checks').hidden=el.value!=='sel';}
   else if(a==='exsoru'){ui.draft.dersler[+el.dataset.i].soru=Math.max(0,parseInt(el.value,10)||0);render();}
@@ -1598,7 +1607,7 @@ document.addEventListener('change',e=>{
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&ui.modal){ui.modal=null;render();}});
 /* Uygulamaya geri dönülünce verileri tazele (öğretmen yeni işaretleri görsün) */
 document.addEventListener('visibilitychange',()=>{
-  if(document.visibilityState==='visible'&&ui.role&&!ui.modal&&!ui.draft&&!ui.busy){yukle().then(render).catch(()=>{});}
+  if(document.visibilityState==='visible'&&ui.role&&!ui.modal&&!ui.draft&&!ui.busy&&!(ui.upFiles&&ui.upFiles.length)&&!(ui.upPick&&Date.now()-ui.upPick<600000)){yukle().then(render).catch(()=>{});}
 });
 
 /* ---------- başlangıç ---------- */
