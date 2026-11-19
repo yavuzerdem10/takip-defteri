@@ -199,6 +199,15 @@ textarea{min-height:80px;resize:vertical}
 .err{color:var(--crit);font-size:.9rem}
 
 /* veli */
+.gun-ozet{display:flex;gap:10px;flex-wrap:wrap;margin:4px 0 2px}.gun-ozet .tile{flex:1 1 150px}
+.gkart{border:1px solid var(--line);border-radius:14px;padding:14px 16px;background:var(--paper);display:flex;flex-direction:column;gap:8px}
+.gkart.yeni{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}.gkart.gordu{opacity:.92}
+.gkart-h{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}.gkart-h strong{font-size:1.05rem}
+.gsat{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.92rem}.gsat b{font-weight:600}
+.gsat .lbl{color:var(--muted);min-width:92px}.gods{display:flex;flex-wrap:wrap;gap:6px}
+.gtepki{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.gtepki input{flex:1 1 200px;min-width:0}
+.gkartlar{display:flex;flex-direction:column;gap:12px}.gyok li{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.gordu-not{background:var(--good-soft);color:var(--good);border-radius:10px;padding:8px 12px;font-size:.92rem}
 .pfoot{text-align:center;margin-top:4px}.pfoot button{background:none;border:0;color:var(--muted);text-decoration:underline;font-size:.85rem;cursor:pointer;padding:6px}
 .pmain{max-width:640px;width:100%;margin:0 auto;padding:20px 16px 104px;display:flex;flex-direction:column;gap:16px}
 .bnav{position:fixed;left:0;right:0;bottom:0;background:var(--paper);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);padding-bottom:env(safe-area-inset-bottom);z-index:20}
@@ -467,7 +476,7 @@ async function yukle(){
   const om={};odv.forEach(o=>{const k=o.ogrenci_id+'|'+o.tarih;(om[k]=om[k]||{})[o.ders]=o.durum;});
   s.logs=kay.map(k=>({sid:k.ogrenci_id,date:k.tarih,
     soru:Object.fromEntries(Object.entries(DERS_SUTUN).filter(([,c])=>k[c]>0).map(([d,c])=>[d,k[c]])),
-    sayfa:k.sayfa,kitap:k.kitap||'',calismadik:k.calismadik,odevYok:k.odev_yok,odev:om[k.ogrenci_id+'|'+k.tarih]||{}}));
+    sayfa:k.sayfa,kitap:k.kitap||'',calismadik:k.calismadik,odevYok:k.odev_yok,odev:om[k.ogrenci_id+'|'+k.tarih]||{},zaman:k.guncelleme,gordu:k.ogretmen_gordu,tepki:k.ogretmen_tepki||''}));
   const rs={};son.forEach(r=>{const e=rs[r.deneme_id]=rs[r.deneme_id]||{};(e[r.ogrenci_id]=e[r.ogrenci_id]||{})[r.ders]={d:r.dogru,y:r.yanlis};});
   s.exams=den.map(e=>({id:e.id,name:e.ad,date:e.tarih,dersler:e.dersler,netRule:e.net_kurali,results:rs[e.id]||{}}));
   s.notes=nt.map(n=>({id:n.id,sid:n.ogrenci_id,ref:(n.konu_turu==='gorev'?'task:':'exam:')+n.konu_id,from:n.yazan_rol,text:n.metin||EK_AD[n.ek_tur]||'',metin:n.metin||'',ek:n.ek_yolu,ekTur:n.ek_tur,ekSure:n.ek_sure,at:tarihTR(n.olusturma),seen:n.goruldu}));
@@ -521,6 +530,8 @@ async function kayitKaydet(sid,date){
   Object.entries(DERS_SUTUN).forEach(([d,c])=>{row[c]=+(l.soru[d]||0);});
   try{
     await q(sb.from('gunluk_kayitlar').upsert(row,{onConflict:'ogrenci_id,tarih'}));
+    l.gordu=null;l.tepki='';l.zaman=new Date().toISOString();
+    {const gn=document.querySelector('#app .gordu-not');if(gn)gn.remove();}
     const ders=Object.keys(l.odev||{});
     let del=sb.from('okul_odevleri').delete().eq('ogrenci_id',sid).eq('tarih',date);
     if(ders.length) del=del.not('ders','in','('+ders.map(d=>'"'+d.replace(/"/g,'')+'"').join(',')+')');
@@ -903,7 +914,8 @@ function vLogin(){
 /* ---------- öğretmen ---------- */
 function tShell(body){
   const pend=pendingList().length,openN=threads().filter(t=>t.open).length;
-  const nav=[['pano','Pano'],['gorevler','Görevler'],['kontrol','Kontrol',pend],['notlar','Notlar',openN],['denemeler','Denemeler'],['dosyalar','Dosyalar'],['ogrenciler','Öğrenciler'],['grup','Enler ve akış'],['ayarlar','Ayarlar']];
+  const gYeni=gunlukBekleyen(TODAY).length;
+  const nav=[['pano','Pano'],['gunluk','Günlük',gYeni],['gorevler','Görevler'],['kontrol','Kontrol',pend],['notlar','Notlar',openN],['denemeler','Denemeler'],['dosyalar','Dosyalar'],['ogrenciler','Öğrenciler'],['grup','Enler ve akış'],['ayarlar','Ayarlar']];
   return `<header class="top"><div class="brand"><span class="logo">${LOGO}</span><div><strong>Ödev Takip Defteri</strong><small>${esc(S.settings.className)}</small></div></div>
    <div class="top-r"><span class="role">${esc(ME.ad)}</span><button class="btn ghost sm" data-a="refresh" title="Verileri yenile">Yenile</button><button class="iconbtn" data-a="bell" aria-label="Bildirimler">${BELL}${(()=>{const u=S.notifs.filter(n=>!n.read).length;return u?`<span class="badge">${u}</span>`:'';})()}</button><button class="btn ghost sm" data-a="logout">Çıkış</button></div></header>
    <div class="tbody"><nav class="side" aria-label="Öğretmen menüsü">${nav.map(([v,l,b])=>`<button class="nav ${ui.view===v?'on':''}" data-a="go" data-v="${v}">${l}${b?`<span class="badge">${b}</span>`:''}</button>`).join('')}</nav>
@@ -991,6 +1003,61 @@ function taskCard(t){
    ${open?`<div class="task-b">${t.desc?`<p class="small span-all">${esc(t.desc)}</p>`:''}<div class="span-all row-btns" style="align-items:center">${fileChips(filesFor('task:'+t.id))}<button class="btn sm" data-a="attach" data-r="task:${t.id}">+ PDF ekle</button></div>${ss.map(s=>srow(t,s)).join('')}
     <div class="actions span-all">${c.veli_tam?`<button class="btn sm" data-a="approveall" data-t="${t.id}">Kontroldekilerin tümünü onayla</button>`:''}<button class="btn sm danger" data-a="deltask" data-t="${t.id}">${ui.confirmDel===t.id?'Emin misiniz? Görevi sil':'Görevi sil'}</button></div></div>`:''}
   </article>`;
+}
+/* ---------- Günlük: kim girdi, ne yaptı, görüldü mü ---------- */
+const saat=ts=>{try{return new Date(ts).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});}catch(_){return '';}};
+const TEPKI=['👏 Aferin, harika çalışmış!','Güzel, böyle devam!','Biraz daha soru çözelim.','Okumayı unutmayalım.'];
+function gunlukBekleyen(date){return S.students.filter(s=>{const l=getLog(s.id,date);return l&&!l.gordu;});}
+function gunlukIsaretleri(sid,date){
+  return S.tasks.map(t=>({t,m:S.marks[t.id+'|'+sid]})).filter(x=>x.m&&x.m.at===date&&['veli_tam','veli_eksik','veli_yok'].includes(x.m.status));
+}
+function gunlukKart(s,date){
+  const l=getLog(s.id,date),tot=Object.values(l.soru||{}).reduce((a,b)=>a+b,0);
+  const ods=Object.entries(l.odev||{}),isr=gunlukIsaretleri(s.id,date);
+  const nts=S.notes.filter(n=>n.sid===s.id&&n.from==='veli'&&n.at===date);
+  const satir=(lbl,ic)=>`<div class="gsat"><span class="lbl">${lbl}</span><span>${ic}</span></div>`;
+  let ic='';
+  if(l.calismadik) ic+=`<div class="banner info small">Veli “bugün çalışmadık” dedi.</div>`;
+  else{
+    ic+=satir('Soru',tot?`<b>${tot}</b> · ${Object.entries(l.soru).map(([d,n])=>`${esc(d.replace(' Bilimleri','').replace(' Bilgiler',''))} ${n}`).join(' · ')}`:'<span class="muted">girilmedi</span>');
+    ic+=satir('Okuma',l.sayfa?`<b>${l.sayfa}</b> sayfa${l.kitap?' · '+esc(l.kitap):''}`:'<span class="muted">girilmedi</span>');
+  }
+  ic+=satir('Okul ödevi',ods.length?`<span class="gods">${ods.map(([d,v])=>`<span class="pill ${ODV[v][2]==='muted'?'neutral':ODV[v][2]}">${esc(d.replace(' Bilimleri','').replace(' Bilgiler','').replace(' Kültürü',''))}: ${ODV[v][1]}</span>`).join('')}</span>`:l.odevYok?'Hiçbir dersten ödev yoktu':'<span class="muted">girilmedi</span>');
+  if(isr.length) ic+=satir('Görevler',isr.map(({t,m})=>`${esc(t.title)} ${pill(m.status)}${m.secim?` <span class="small muted">${SECIM[m.secim]}</span>`:''}`).join('<br>'));
+  if(nts.length) ic+=satir('Veli notu',nts.map(n=>`<button class="link" data-a="thread" data-s="${s.id}" data-r="${n.ref}">${esc(n.text)}</button>`).join('<br>'));
+  const id=s.id+'|'+date;
+  const alt=l.gordu?`<div class="gordu-not">✓ Gördünüz · ${saat(l.gordu)}${l.tepki?` · “${esc(l.tepki)}”`:''}</div>`:
+    `<div class="gtepki"><input id="tp-${s.id}" type="text" maxlength="200" placeholder="İsterseniz kısa bir not (veliye gider)"><button class="btn pri" data-a="gordum" data-s="${s.id}">Gördüm ✓</button></div>
+     <div class="chips">${TEPKI.map((t,i)=>`<button class="chipbtn" data-a="tepki" data-s="${s.id}" data-i="${i}">${esc(t)}</button>`).join('')}</div>`;
+  return `<article class="gkart ${l.gordu?'gordu':'yeni'}" id="gk-${s.id}"><div class="gkart-h"><div><button class="link who" data-a="student" data-s="${s.id}"><strong>${esc(s.name)}</strong></button><div class="small muted">Veli: ${esc(s.parent||'—')} · ${l.zaman?saat(l.zaman)+'’de kaydetti':'kaydetti'}</div></div>${l.gordu?'<span class="pill good">Görüldü</span>':'<span class="pill warn">Yeni</span>'}</div>${ic}${alt}</article>`;
+}
+function vGunluk(){
+  const date=ui.gunTarih||TODAY,sts=S.students;
+  const giren=sts.filter(s=>getLog(s.id,date)),yeni=giren.filter(s=>!getLog(s.id,date).gordu),gor=giren.filter(s=>getLog(s.id,date).gordu);
+  const girmeyen=sts.filter(s=>!getLog(s.id,date));
+  const neden=s=>{
+    if(!s.veliVar) return '<span class="pill neutral">veli hesabı yok</span>';
+    if(s.askida) return '<span class="pill crit">hesap askıda</span>';
+    const du=S.durum.filter(d=>d.sid===s.id&&date>=d.from&&date<=d.to);
+    if(du.length) return `<span class="pill neutral">${esc(DURUM[du[0].type]||du[0].type)}</span>`;
+    if(!S.settings.haftasonuSay&&isWeekend(date)) return '<span class="pill neutral">hafta sonu</span>';
+    return '<span class="pill warn">kayıt yok</span>';
+  };
+  const ileri=date<TODAY;
+  return `<div class="head"><div><h1>Günlük</h1><p>${fmtLong(date)}${date===TODAY?' · bugün':''}</p></div>
+   <div class="row-btns"><button class="btn" data-a="gungun" data-v="-1">‹ Önceki gün</button>${ileri?`<button class="btn" data-a="gungun" data-v="1">Sonraki gün ›</button><button class="btn" data-a="gungun" data-v="0">Bugün</button>`:''}</div></div>
+  <div class="gun-ozet tiles">
+   <div class="tile"><b>${giren.length} / ${sts.length}</b><span>Kayıt giren</span></div>
+   <div class="tile pen"><b>${yeni.length}</b><span>Bakılmayı bekleyen</span></div>
+   <div class="tile"><b>${girmeyen.length}</b><span>Kayıt girmeyen</span></div>
+  </div>
+  ${date===TODAY&&gunlukBekleyen(addDays(TODAY,-1)).length?`<div class="banner info"><span>Dünden bakılmayı bekleyen ${gunlukBekleyen(addDays(TODAY,-1)).length} kayıt var.</span><div><button class="btn sm" data-a="gungun" data-v="-1">Dünü aç</button></div></div>`:''}
+  <section class="card ${girmeyen.length?'alert':''}"><div class="card-h"><h2>Kayıt girmeyenler (${girmeyen.length})</h2></div>
+   ${girmeyen.length?`<ul class="list gyok">${girmeyen.map(s=>`<li><button class="link" data-a="student" data-s="${s.id}">${esc(s.name)}</button>${neden(s)}</li>`).join('')}</ul>`:'<p class="empty">Herkes kaydını girmiş 🎉</p>'}
+   ${date===TODAY&&girmeyen.length?`<p class="small muted">Kayıt girmeyen velilere ${esc(S.settings.hatirlatma)}’da otomatik hatırlatma gider.</p>`:''}</section>
+  <section class="card"><div class="card-h"><h2>Bakılmayı bekleyen (${yeni.length})</h2>${yeni.length>1?`<button class="btn sm" data-a="gordumhepsi">Hepsini gördüm</button>`:''}</div>
+   ${yeni.length?`<div class="gkartlar">${yeni.sort((a,b)=>(getLog(a.id,date).zaman||'').localeCompare(getLog(b.id,date).zaman||'')).map(s=>gunlukKart(s,date)).join('')}</div>`:'<p class="empty">Yeni kayıt yok.</p>'}</section>
+  ${gor.length?`<section class="card"><div class="card-h"><h2>Gördükleriniz (${gor.length})</h2></div><div class="gkartlar">${gor.map(s=>gunlukKart(s,date)).join('')}</div></section>`:''}`;
 }
 function vGorevler(){
   const f=ui.filter,list=S.tasks.filter(t=>f==='all'||t.type===f).sort((a,b)=>b.due.localeCompare(a.due));
@@ -1212,6 +1279,7 @@ function logCard(sid,ro){
   return `<section class="card"><div class="card-h"><h2>Günlük kayıt</h2><div class="daytabs">${[TODAY,y].map(d=>`<button class="chipbtn ${d===date?'on':''}" data-a="logdate" data-v="${d}">${d===TODAY?'Bugün':'Dün'}</button>`).join('')}</div></div>
    <p class="small muted">${fmtLong(date)} · Her dokunuş kendiliğinden kaydedilir.</p>
    ${l?(l.calismadik?'<div class="banner info small">Bu gün için “çalışmadık” kaydı girildi. Sayılara dokunursanız kayıt güncellenir.</div>':`<span class="saved" id="kayit-durum">✓ Kaydedildi · toplam ${tot} soru${l.sayfa?', '+l.sayfa+' sayfa':''}</span>`):'<span class="small muted">Bu gün için henüz kayıt yok.</span>'}
+   ${l&&l.gordu?`<div class="gordu-not">✓ Öğretmen bu kaydı gördü · ${saat(l.gordu)}${l.tepki?`<br><strong>“${esc(l.tepki)}”</strong>`:''}</div>`:''}
    ${odevHtml}
    <div class="sec"><h3>Soru çözümü</h3><p class="small muted">Her ders için kaç soru çözüldüğüne dokunun; doğru–yanlış gerekmez.</p></div>
    ${SORU_DERSLER.map(d=>chipRow(d,d,l?(l.soru[d]||0):0,QS)).join('')}
@@ -1488,13 +1556,42 @@ function render(){
   const sy=window.scrollY;let html;
   if(ui.loading) html=`<div class="login"><div class="login-box"><div class="brand"><span class="logo">${LOGO}</span><div><strong style="font-size:1.4rem">Ödev Takip Defteri</strong><small>Yükleniyor…</small></div></div></div></div>`;
   else if(!ui.role) html=vLogin();
-  else if(ui.role==='t'){const v={pano:vPano,gorevler:vGorevler,kontrol:vKontrol,notlar:vNotlar,denemeler:vDenemeler,dosyalar:vDosyalar,ogrenciler:vOgrenciler,grup:vGrup,ayarlar:vAyarlar}[ui.view]||vPano;html=tShell(v());}
+  else if(ui.role==='t'){const v={pano:vPano,gunluk:vGunluk,gorevler:vGorevler,kontrol:vKontrol,notlar:vNotlar,denemeler:vDenemeler,dosyalar:vDosyalar,ogrenciler:vOgrenciler,grup:vGrup,ayarlar:vAyarlar}[ui.view]||vPano;html=tShell(v());}
   else if(!ui.sid) html=`<div class="login"><div class="login-box"><section class="card"><h2>Öğrenci bağlantısı bulunamadı</h2><p class="muted">Bu veli hesabı henüz bir öğrenciye bağlı değil. Lütfen öğretmenle iletişime geçin.</p><button class="btn" data-a="logout">Çıkış</button></section></div></div>`;
   else{const v={bugun:vPBugun,gelisim:vPGelisim,grup:vPGrup,dosyalar:vPDosyalar,notlar:vPNotlar}[ui.pview]||vPBugun;html=pShell(v());}
   app.innerHTML=html+(ui.role?vModal():'');
   if(ui.modal&&ui.modal.type==='thread') ekleriDoldur();
   window.scrollTo(0,sy);
+  gecmisEsitle();
 }
+/* ---------- telefonun geri tuşu: önceki ekrana / pencereyi kapatmaya döner ---------- */
+let gecmisYoksay=false;
+function navDurum(){return {k:ui.role==='t'?'t|'+ui.view+'|'+(ui.profile||'')+'|'+(ui.view==='gunluk'?(ui.gunTarih||TODAY):''):'v|'+ui.pview,
+  m:!!ui.modal,view:ui.view,profile:ui.profile||null,gun:ui.gunTarih||null,pview:ui.pview};}
+function gecmisEsitle(){
+  if(!ui.role||ui.loading||!S) return;
+  try{
+    const st=history.state||{},d=navDurum();
+    if(!st.k){history.replaceState(Object.assign({},d,{m:false}),'');if(d.m) history.pushState(d,'');return;}
+    if(st.k!==d.k){if(st.m) history.replaceState(d,''); else history.pushState(d,'');return;}
+    if(d.m&&!st.m){history.pushState(d,'');return;}
+    if(!d.m&&st.m){gecmisYoksay=true;history.back();}
+  }catch(e){console.error(e);}
+}
+function modalKapatSessiz(){
+  ekTemizle();
+  if(ui.modal&&ui.modal.type==='bell'&&S&&S.notifs.some(n=>!n.read)){S.notifs.forEach(n=>n.read=true);sb.from('bildirimler').update({okundu:true}).eq('okundu',false).then(()=>{});}
+  ui.modal=null;
+}
+window.addEventListener('popstate',e=>{
+  if(gecmisYoksay){gecmisYoksay=false;return;}
+  const st=e.state;if(!ui.role||!S||!st||!st.k) return;
+  if(ui.modal) modalKapatSessiz();
+  if(ui.role==='t'&&st.k.startsWith('t|')){ui.view=st.view||'pano';ui.profile=st.profile||null;ui.gunTarih=st.gun||null;ui.draft=null;}
+  else if(ui.role==='v'&&st.k.startsWith('v|')){ui.pview=st.pview||'bugun';if(ui.pview==='grup'&&(!ui.board||ui.board.p!==ui.period))panoYukle();}
+  if(st.m) history.replaceState(Object.assign({},st,{m:false}),'');
+  render();window.scrollTo(0,0);
+});
 function toast(t){const e=document.createElement('div');e.className='toast';e.textContent=t;document.body.appendChild(e);setTimeout(()=>e.remove(),2600);}
 const goTop=fn=>{fn();ui.modal=null;render();window.scrollTo(0,0);};
 
@@ -1554,13 +1651,20 @@ document.addEventListener('click',async e=>{
   const el=e.target.closest('[data-a]');if(!el) return;
   const a=el.dataset.a;
   if(a==='upclear'){ui.upFiles=null;const i_=document.getElementById('up-file');if(i_)i_.value='';const s_=document.getElementById('up-sel');if(s_)s_.innerHTML='';return;}
-  if(a==='bgclose'){if(e.target===el){ekTemizle();ui.modal=null;render();}return;}
+  if(a==='bgclose'){if(e.target===el){modalKapatSessiz();render();}return;}
   if(['upmode','tgmode','exin','exmeta','exsoru','qin','qbook','set','setb','target','eval','vis','msgtaslak'].includes(a)) return;
   if(!['deltask','delexam','deltpl','delfile','velihesap','reactivate','ogrsil'].includes(a)) ui.confirmDel=null;
   const k=el.dataset.k;
   switch(a){
     case 'logout': await sb.auth.signOut();Object.assign(ui,{role:null,sid:null,modal:null,profile:null,draft:null,openTask:null,openExam:null,board:null});S=null;ME=null;G=null;break;
-    case 'go': return goTop(()=>{ui.view=el.dataset.v;ui.profile=null;ui.draft=null;});
+    case 'go': return goTop(()=>{ui.view=el.dataset.v;ui.profile=null;ui.draft=null;if(el.dataset.v==='gunluk')ui.gunTarih=TODAY;});
+    case 'gungun':{const v=+el.dataset.v;ui.gunTarih=v===0?TODAY:addDays(ui.gunTarih||TODAY,v);if(ui.gunTarih>TODAY)ui.gunTarih=TODAY;break;}
+    case 'tepki':{const i=document.getElementById('tp-'+el.dataset.s);if(i){i.value=TEPKI[+el.dataset.i];i.focus();}return;}
+    case 'gordum':{const sid=el.dataset.s,date=ui.gunTarih||TODAY,i=document.getElementById('tp-'+sid),tp=i?i.value.trim():'';
+      el.disabled=true;
+      return yaz(()=>q(sb.rpc('kayit_gordum',{p_ogrenci:sid,p_tarih:date,p_tepki:tp||null})),stu(sid).name+': görüldü, veliye bildirildi');}
+    case 'gordumhepsi':{const date=ui.gunTarih||TODAY,ls=gunlukBekleyen(date);
+      return yaz(async()=>{for(const s of ls){const i=document.getElementById('tp-'+s.id);await q(sb.rpc('kayit_gordum',{p_ogrenci:s.id,p_tarih:date,p_tepki:(i&&i.value.trim())||null}));}},ls.length+' kayıt görüldü olarak işaretlendi');}
     case 'pgo': goTop(()=>{ui.pview=el.dataset.v;});if(el.dataset.v==='grup'&&(!ui.board||ui.board.p!==ui.period))panoYukle();return;
     case 'student': return goTop(()=>{ui.view='ogrenciler';ui.profile=el.dataset.s;ui.chartDers='Toplam';});
     case 'back': return goTop(()=>{ui.profile=null;});
@@ -1582,10 +1686,7 @@ document.addEventListener('click',async e=>{
     case 'pushkapat': try{await pushKapat();toast('Bu cihazda bildirimler kapatıldı');}catch(e){toast(hataMetni(e));} render();return;
     case 'pushdeneme': try{el.disabled=true;await bildirimFonk('deneme');toast('Deneme bildirimi gönderildi');}catch(e){toast(e.message||'Gönderilemedi');} el.disabled=false;return;
     case 'pushsonra': try{localStorage.setItem('td_push_sonra',String(Date.now()));}catch(_){} render();return;
-    case 'closemodal':
-      ekTemizle();
-      if(ui.modal&&ui.modal.type==='bell'&&S.notifs.some(n=>!n.read)){S.notifs.forEach(n=>n.read=true);sb.from('bildirimler').update({okundu:true}).eq('okundu',false).then(()=>{});}
-      ui.modal=null;break;
+    case 'closemodal': modalKapatSessiz();break;
     case 'ngo':{
       S.notifs.forEach(n=>n.read=true);sb.from('bildirimler').update({okundu:true}).eq('okundu',false).then(()=>{});
       return hedefeGit(el.dataset.go);}
@@ -1880,7 +1981,7 @@ function pushKarti(yer){
 function hedefeGit(h){
   h=h||'bugun';
   if(ui.role==='v'){goTop(()=>{ui.pview=['bugun','gelisim','grup','dosyalar','notlar'].includes(h)?h:'bugun';ui.modal=null;});if(ui.pview==='grup')panoYukle();}
-  else goTop(()=>{ui.view=['pano','kontrol','gorevler','ogrenciler','denemeler','dosyalar','notlar','ayarlar'].includes(h)?h:'pano';ui.profile=null;ui.modal=null;});
+  else goTop(()=>{ui.view=['pano','gunluk','kontrol','gorevler','ogrenciler','denemeler','dosyalar','notlar','ayarlar'].includes(h)?h:'pano';ui.profile=null;ui.modal=null;});
 }
 if('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message',e=>{if(e.data&&e.data.tur==='bildirim-ac'&&ui.role){yukle().then(()=>hedefeGit(e.data.hedef)).catch(()=>{});}});
 
